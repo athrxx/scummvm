@@ -4963,6 +4963,22 @@ static const uint16 kq5PatchCrispinIntroSignal[] = {
 	PATCH_END
 };
 
+// Random spells
+static const uint16 kq5Cp[] = {
+	SIG_MAGICDWORD,
+	0x36,             // push
+	0x45, 0x1a, 0x02, // callb 1a 02
+	0x85, 0x00,       // lat 00
+	0x48,             // ret
+	SIG_END
+};
+
+static const uint16 kq5PatchCp[] = {
+	PATCH_ADDTOOFFSET(+4),
+	0x35, 0x01,      // ldi 01 (answer was correct)
+	PATCH_END
+};
+
 //          script, description,                                      signature                  patch
 static const SciScriptPatcherEntry kq5Signatures[] = {
 	{  true,     0, "CD: harpy volume change",                     1, kq5SignatureCdHarpyVolume,            kq5PatchCdHarpyVolume },
@@ -4971,6 +4987,7 @@ static const SciScriptPatcherEntry kq5Signatures[] = {
 	{  true,   124, "Multilingual: Ending glitching out",          3, kq5SignatureMultilingualEndingGlitch, kq5PatchMultilingualEndingGlitch },
 	{ false,   124, "Win: GM Music signal checks",                 4, kq5SignatureWinGMSignals,             kq5PatchWinGMSignals },
 	{  true,   200, "CD: witch cage init",                         1, kq5SignatureWitchCageInit,            kq5PatchWitchCageInit },
+	{  true,   754, "cp",										   1, kq5Cp,								kq5PatchCp },
 	{  true,   973, "timer rollover",                              1, sciSignatureTimerRollover,            sciPatchTimerRollover },
 	SCI_SIGNATUREENTRY_TERMINATOR
 };
@@ -6323,8 +6340,24 @@ static const uint16 kq6PatchGuardDogMusic[] = {
 	PATCH_END
 };
 
+// Isle of the Sacred Mountain cliffs questions
+static const uint16 kq6Cp[] = {
+	SIG_MAGICDWORD,
+	0x63, 0x78,      // pToa 78 (correctButton)
+	0x1a,            // eq?
+	0x2f, 0x05,      // bt 05  [0bc6]
+	SIG_END
+};
+
+static const uint16 kq6PatchCp[] = {
+	PATCH_ADDTOOFFSET(+3),
+	0x33, 0x08,       // jmp 0x08 [0bc9] (answer is always correct and skip the bnt)
+	PATCH_END
+};
+
 //          script, description,                                      signature                                 patch
 static const SciScriptPatcherEntry kq6Signatures[] = {
+	{  true,     21, "cp",              1,    kq6Cp, kq6PatchCp },
 	{  true,    52, "CD: Girl In The Tower playback",                 1, kq6CDSignatureGirlInTheTowerPlayback,     kq6CDPatchGirlInTheTowerPlayback },
 	{  true,    80, "fix guard dog music",                            1, kq6SignatureGuardDogMusic,                kq6PatchGuardDogMusic },
 	{  true,    87, "fix Drink Me bottle",                            1, kq6SignatureDrinkMeFix,                   kq6PatchDrinkMeFix },
@@ -7438,9 +7471,26 @@ static const uint16 larry1PatchBuyApple[] = {
 	PATCH_END
 };
 
+// Age verification
+static const uint16 larry1Cp[] = {
+	SIG_MAGICDWORD,
+	0x8b, 0x03,          // lsl 03
+	0x83, 0x04,          // lal 04
+	0x1a,                // eq?
+	0x2e, 0x05, 0x00,    // bt 0005  [0679]
+	SIG_END
+};
+
+static const uint16 larry1PatchCp[] = {
+	PATCH_ADDTOOFFSET(+5),
+	0x32, 0x07, 0x00,       // jmp 0007 (answer is always correct and skip the bnt)
+	PATCH_END
+};
+
 //          script, description,                               signature                patch
 static const SciScriptPatcherEntry larry1Signatures[] = {
 	{  true,   300, "Spanish: buy apple from barrel man",    1, larry1SignatureBuyApple, larry1PatchBuyApple },
+	{  true,    720, "cp",              1,    larry1Cp, larry1PatchCp },
 	SCI_SIGNATUREENTRY_TERMINATOR
 };
 
@@ -7480,10 +7530,74 @@ static const uint16 larry2PatchWearParachutePoints[] = {
 	PATCH_END
 };
 
+// Girl matching
+static const uint16 larry2Cp[] = {
+	SIG_MAGICDWORD,
+	0x43, 0x49, 0x04, // callk StrCmp[49] 04
+	0x18,             // not
+	0x30, 0x0d, 0x00, // bnt 000d  [05cc]
+	SIG_END
+};
+
+static const uint16 larry2PatchCp[] = {
+	PATCH_ADDTOOFFSET(+4),
+	0x34, 0x00, 0x00, // ldi 0000 (never jump)
+	PATCH_END
+};
+
 //          script, description,                                      signature                           patch
 static const SciScriptPatcherEntry larry2Signatures[] = {
+	{  true,     10, "cp",              1,     larry2Cp, larry2PatchCp },
 	{  true,    63, "plane: no points for wearing parachute",      1, larry2SignatureWearParachutePoints, larry2PatchWearParachutePoints },
 	SCI_SIGNATUREENTRY_TERMINATOR
+};
+
+// Age verification
+static const uint16 larry3Cp1[] = {
+	SIG_MAGICDWORD,
+	0x8b, 0x05,       // lsl 05
+	0x83, 0x06,       // lal 06
+	0x1a,             // eq?
+	0x30, 0x38, 0x00, // bnt 0038  [055b]
+	SIG_END
+};
+
+static const uint16 larry3PatchCp1[] = {
+	PATCH_ADDTOOFFSET(+5),
+	0x34, 0x00, 0x00, // ldi 0000
+	PATCH_END
+};
+
+// Ticket number
+static const uint16 larry3Cp2[] = {
+	SIG_MAGICDWORD,
+	0x3c,             // dup
+	0x35, 0x02,       // ldi 02
+	0x1a,             // eq?
+	0x30, 0x94, 0x00, // bnt 0094  [0fac]
+	SIG_END
+};
+
+static const uint16 larry3PatchCp2[] = {
+	PATCH_ADDTOOFFSET(+13),
+	0x32,             // jmp
+	PATCH_END
+};
+
+// Locker combination
+static const uint16 larry3Cp3[] = {
+	SIG_MAGICDWORD,
+	0x8b, 0x00,       // lsl 00
+	0x81, 0x93,       // lag 93
+	0x1c,             // ne?
+	0x2e, 0x0d, 0x00, // bt 000d  [0527]
+	SIG_END
+};
+
+static const uint16 larry3PatchCp3[] = {
+	PATCH_ADDTOOFFSET(+5),
+	0x32, 0x1d, 0x00, // jmp 001d  [0537]
+	PATCH_END
 };
 
 // ===========================================================================
@@ -7550,6 +7664,9 @@ static const uint16 larry3PatchVolumeSlider[] = {
 
 //          script, description,                                      signature                     patch
 static const SciScriptPatcherEntry larry3Signatures[] = {
+	{  true,    140, "cp1",             1,     larry3Cp1, larry3PatchCp1 },
+	{  true,    420, "cp2",             1,     larry3Cp2, larry3PatchCp2 },
+	{  true,    370, "cp3",             1,     larry3Cp3, larry3PatchCp3 },
 	{  true,   290, "disable speed test",                          1, larry3SignatureSpeedTest,     larry3PatchSpeedTest },
 	{  true,   997, "fix volume slider",                           1, larry3SignatureVolumeSlider,  larry3PatchVolumeSlider },
 	SCI_SIGNATUREENTRY_TERMINATOR
@@ -7609,8 +7726,26 @@ static const uint16 larry5PatchGermanEndingPattiTalker[] = {
 	PATCH_END
 };
 
+// Airport terminal
+static const uint16 larry5Cp[] = {
+	SIG_MAGICDWORD,
+	0x3c,			// dup
+	0x83, 0x10,		// lal 10
+	0x93, 0x04,		// lali 04
+	0x1a,           // eq?
+	0x30, 0x0b, 0x00,	// bnt 000b  [0108]
+	SIG_END
+};
+
+static const uint16 larry5PatchCp[] = {
+	PATCH_ADDTOOFFSET(+6),
+	0x34, 0x00, 0x00, // ldi 0000
+	PATCH_END
+};
+
 //          script, description,                                      signature                               patch
 static const SciScriptPatcherEntry larry5Signatures[] = {
+	{  true,    258, "cp",              1,     larry5Cp, larry5PatchCp },
 	{  true,   280, "English-only: fix green card limo bug",       1, larry5SignatureGreenCardLimoBug,        larry5PatchGreenCardLimoBug },
 	{  true,   380, "German-only: Enlarge Patti Textbox",          1, larry5SignatureGermanEndingPattiTalker, larry5PatchGermanEndingPattiTalker },
 	SCI_SIGNATUREENTRY_TERMINATOR
@@ -8421,6 +8556,24 @@ static const uint16 laurabow1PatchReviewNotesDialog[] = {
 	PATCH_END
 };
 
+//	Copy Protection
+static const uint16 laurabow1SignatureCp[] = {
+	SIG_MAGICDWORD,
+	0x30, 0x48, 0x00, 0x8f, 0x01, 0x8d, 0x00, 0x35, 0x04, 0x06,
+	0x93, 0x05, 0x1e, 0x30, 0x36, 0x00, 0x8f, 0x02, 0x8d, 0x00,
+	SIG_END
+};
+
+static const uint16 laurabow1PatchCp[] = {
+	0x39, 0x00,	0xab, 0x00,	0x39, 0x00,	0xab, 0x01,	0x39, 0x00,
+	0xab, 0x35,	0x39, 0x27,	0xaf, 0x01,	0x39, 0x27,	0xaf, 0x02,
+	PATCH_GETORIGINALBYTE(0), PATCH_GETORIGINALBYTE(1), PATCH_GETORIGINALBYTE(2),
+	PATCH_GETORIGINALBYTE(3), PATCH_GETORIGINALBYTE(4), PATCH_GETORIGINALBYTE(5),
+	PATCH_GETORIGINALBYTE(6), PATCH_GETORIGINALBYTE(7), PATCH_GETORIGINALBYTE(8),
+	PATCH_GETORIGINALBYTE(9), PATCH_GETORIGINALBYTE(10),
+	PATCH_END
+};
+
 //          script, description,                                signature                                             patch
 static const SciScriptPatcherEntry laurabow1Signatures[] = {
 	{  true,     4, "easter egg view fix",                      1, laurabow1SignatureEasterEggViewFix,                laurabow1PatchEasterEggViewFix },
@@ -8436,6 +8589,7 @@ static const SciScriptPatcherEntry laurabow1Signatures[] = {
 	{  true,   236, "tell Lilly about Gertie blocking fix 2/2", 1, laurabow1SignatureTellLillyAboutGerieBlockingFix2, laurabow1PatchTellLillyAboutGertieBlockingFix2 },
 	{  true,   414, "copy protection random fix",               1, laurabow1SignatureCopyProtectionRandomFix,         laurabow1PatchCopyProtectionRandomFix },
 	{  true,   786, "review notes dialog fix",                  1, laurabow1SignatureReviewNotesDialog,               laurabow1PatchReviewNotesDialog },
+	{  true,   414, "copy protection",							1, laurabow1SignatureCp,							  laurabow1PatchCp },
 	{  true,   998, "obstacle collision lockups fix",           1, laurabow1SignatureObstacleCollisionLockupsFix,     laurabow1PatchObstacleCollisionLockupsFix },
 	SCI_SIGNATUREENTRY_TERMINATOR
 };
@@ -19135,6 +19289,23 @@ static const uint16 sq4FloppyPatchSoftwareClerkMessage[] = {
 	PATCH_END
 };
 
+// Time shuttle
+static const uint16 sq4Cp[] = {
+	SIG_MAGICDWORD,
+	0x5b, 0x02, 0x15,// lea 02 15
+	0x36,            // push
+	0x43, 0x45, 0x04,// callk StrCmp[45] 04
+	0x18,            // not
+	0x30, 0x2a, 0x00,// bnt 002a  [0620]
+	SIG_END
+};
+
+static const uint16 sq4PatchCp[] = {
+	PATCH_ADDTOOFFSET(+8),
+	0x34, 0x00, 0x00, // ldi 0000 (dummy - never fail)
+	PATCH_END
+};
+
 //          script, description,                                      signature                                      patch
 static const SciScriptPatcherEntry sq4Signatures[] = {
 	{  true,     1, "Floppy: EGA intro delay fix",                    2, sq4SignatureEgaIntroDelay,                     sq4PatchEgaIntroDelay },
@@ -19182,7 +19353,8 @@ static const SciScriptPatcherEntry sq4Signatures[] = {
 	{  true,   700, "CD: red shopper message fix",                    1, sq4CdSignatureRedShopperMessageFix,            sq4CdPatchRedShopperMessageFix },
 	{  true,   701, "CD: getting shot, while getting rope",           1, sq4CdSignatureGettingShotWhileGettingRope,     sq4CdPatchGettingShotWhileGettingRope },
 	{  true,   706, "CD: biker crouch verb fix",                      2, sq4CdSignatureBikerCrouchVerb,                 sq4CdPatchBikerCrouchVerb },
-	{  true,     0, "CD: Babble icon speech and subtitles fix",       1, sq4CdSignatureBabbleIcon,                      sq4CdPatchBabbleIcon },
+	{  true,     0, "CD: Babble icon speech and subtitles fix",       1, sq4CdSignatureBabbleIcon,                      sq4CdPatchBabbleIcon },	
+	{  true,    815, "cp",              1,     sq4Cp, sq4PatchCp },
 	{  true,   818, "CD: Speech and subtitles option",                1, sq4CdSignatureTextOptions,                     sq4CdPatchTextOptions },
 	{  true,   818, "CD: Speech and subtitles option button",         1, sq4CdSignatureTextOptionsButton,               sq4CdPatchTextOptionsButton },
 	{  true,   928, "CD: Narrator lockup fix",                        1, ecoquest1Sq4CdNarratorLockupSignature,         ecoquest1Sq4CdNarratorLockupPatch },
@@ -19414,11 +19586,41 @@ static const uint16 sq1vgaPatchRussianSoundName[] = {
 	PATCH_END
 };
 
+// Arcada library
+static const uint16 sq1Cp1[] = {
+	SIG_MAGICDWORD,
+	0x43, 0x45, 0x04,  // callk StrCmp[45] 04
+	0x36,              // push
+	0x35, 0x00,        // ldi 00
+	0x1a,              // eq?
+	0x30, 0x09, 0x00,  // bnt 0009  [083d]
+	SIG_END
+};
+
+// Deltaur navigational code
+static const uint16 sq1Cp2[] = {
+	SIG_MAGICDWORD,
+	0x43, 0x45, 0x04,  // callk StrCmp[45] 04
+	0x36,              // push
+	0x35, 0x00,        // ldi 00
+	0x1a,              // eq?
+	0x30, 0x26, 0x00,  // bnt 0026  [05ac]
+	SIG_END
+};
+
+static const uint16 sq1PatchCp[] = {
+	PATCH_ADDTOOFFSET(+7),
+	0x34, 0x00, 0x00, // ldi 0000 (dummy - never fail)
+	PATCH_END
+};
+
 //          script, description,                                      signature                                   patch
 static const SciScriptPatcherEntry sq1vgaSignatures[] = {
 	{  true,    45, "Ulence Flats: timepod graphic glitch",        1, sq1vgaSignatureUlenceFlatsTimepodGfxGlitch, sq1vgaPatchUlenceFlatsTimepodGfxGlitch },
 	{  true,    45, "Ulence Flats: force field generator glitch",  1, sq1vgaSignatureUlenceFlatsGeneratorGlitch,  sq1vgaPatchUlenceFlatsGeneratorGlitch },
 	{  true,    58, "Sarien armory droid zapping ego first time",  1, sq1vgaSignatureEgoShowsCard,                sq1vgaPatchEgoShowsCard },
+	{  true,    103, "cp1",             1,     sq1Cp1, sq1PatchCp },
+	{  true,    400, "cp2",             1,     sq1Cp2, sq1PatchCp },
 	{  true,   704, "spider droid timing issue",                   1, sq1vgaSignatureSpiderDroidTiming,           sq1vgaPatchSpiderDroidTiming },
 	{  true,   989, "rename russian Sound class",                  1, sq1vgaSignatureRussianSoundName,            sq1vgaPatchRussianSoundName },
 	{  true,   992, "rename russian Motion class",                 1, sq1vgaSignatureRussianMotionName,           sq1vgaPatchRussianMotionName },
@@ -20610,6 +20812,44 @@ static const SciScriptPatcherEntry torinSignatures[] = {
 };
 
 #endif
+
+
+//	Copy Protection
+static const uint16 pq2EnSignatureCp[] = {
+	SIG_MAGICDWORD,
+	0x35, 0x07, 0x12, 0xa5,
+	SIG_ADDTOOFFSET(67),
+	0x30, 0xcf, 0x00, 0x35,
+	SIG_END
+};
+
+static const uint16 pq2EnPatchCp[] = {
+	0x35, 0x00, 0x12, 0xa5,
+	PATCH_ADDTOOFFSET(67),
+	0x30, 0x00, 0x00, 0x35,
+	PATCH_END
+};
+
+static const uint16 pq2JpSignatureCp[] = {
+	SIG_MAGICDWORD,
+	0x35, 0x07, 0x12, 0xa5,
+	SIG_ADDTOOFFSET(75),
+	0x30, 0xcf, 0x00, 0x35,
+	SIG_END
+};
+
+static const uint16 pq2JpPatchCp[] = {
+	0x35, 0x00, 0x12, 0xa5,
+	PATCH_ADDTOOFFSET(75),
+	0x30, 0x00, 0x00, 0x35,
+	PATCH_END
+};
+
+static const SciScriptPatcherEntry pq2Signatures[] = {
+	{  true, 701, "copy protection", 1, pq2EnSignatureCp, pq2EnPatchCp },
+	{  true, 701, "copy protection", 1, pq2JpSignatureCp, pq2JpPatchCp },
+	SCI_SIGNATUREENTRY_TERMINATOR
+};
 
 // =================================================================================
 
