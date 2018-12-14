@@ -41,9 +41,6 @@ namespace Sci {
 #define STEREO true
 #endif
 
-// FIXME: We don't seem to be sending the polyphony init data, so disable this for now
-#define ADLIB_DISABLE_VOICE_MAPPING
-
 class MidiDriver_AdLib : public MidiDriver {
 public:
 	enum {
@@ -59,6 +56,8 @@ public:
 	int openAdLib(bool isSCI0);
 	void close();
 	void send(uint32 b);
+	void initTrack(SciSpan<const byte> &header);
+
 	MidiChannel *allocateChannel() { return NULL; }
 	MidiChannel *getPercussionChannel() { return NULL; }
 	bool isOpen() const { return _isOpen; }
@@ -183,7 +182,7 @@ public:
 	bool hasRhythmChannel() const { return false; }
 	void setVolume(byte volume) { static_cast<MidiDriver_AdLib *>(_driver)->setVolume(volume); }
 	void playSwitch(bool play) { static_cast<MidiDriver_AdLib *>(_driver)->playSwitch(play); }
-
+	void initTrack(SciSpan<const byte> &header) { static_cast<MidiDriver_AdLib *>(_driver)->initTrack(header); }
 	int getLastChannel() const { return (static_cast<const MidiDriver_AdLib *>(_driver)->useRhythmChannel() ? 8 : 15); }
 };
 
@@ -327,6 +326,34 @@ void MidiDriver_AdLib::send(uint32 b) {
 		break;
 	default:
 		warning("ADLIB: Unknown event %02x", command);
+	}
+}
+
+void MidiDriver_AdLib::initTrack(SciSpan<const byte> &header) {
+	if (!_isOpen || !_isSCI0)
+		return;
+
+	uint8 readPos = 0;
+	uint8 caps = header.getInt8At(readPos++);
+	if (caps != 0 && caps != 2)
+		return;
+
+	for (int i = 0; i < kVoices; ++i) {
+		_voices[i].channel = _voices[i].note = -1;
+		_voices[i].isSustained = false;
+		_voices[i].patch = 13;
+		_voices[i].velocity = 0;
+		_voices[i].age = 0;
+	}
+
+	for (int i = 0; i < 16; ++i) {
+		_channels[i].patch = 13;
+		_channels[i].extraVoices = 0;
+
+		uint8 num = header.getInt8At(readPos++) & 0x7F;
+		uint8 flags = header.getInt8At(readPos++);
+		if (flags & 0x04 && num)
+			assignVoices(i, num);
 	}
 }
 
