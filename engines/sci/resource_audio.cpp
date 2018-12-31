@@ -877,8 +877,8 @@ SoundResource::SoundResource(uint32 resourceNr, ResourceManager *resMan, SciVers
 
 						// 0x20 is set on rhythm channels to prevent remapping
 						// CHECKME: Which SCI versions need that set manually?
-						if (channel->number == 9)
-							channel->flags |= 2;
+					//	if (channel->number == 9)
+					//		channel->flags |= 2;
 						// Note: flag 1: channel start offset is 0 instead of 10
 						//               (currently: everything 0)
 						//               also: don't map the channel to device

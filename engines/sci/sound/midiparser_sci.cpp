@@ -355,17 +355,17 @@ void MidiParser_SCI::midiFilterChannels(int channelMask) {
 	}
 
 end:
-	// Insert stop event
-	// (Delta is already output above)
-	*outData++ = 0xFF; // Meta event
-	*outData++ = 0x2F; // End of track (EOT)
-	*outData++ = 0x00;
-	*outData++ = 0x00;
+// Insert stop event
+// (Delta is already output above)
+*outData++ = 0xFF; // Meta event
+*outData++ = 0x2F; // End of track (EOT)
+*outData++ = 0x00;
+*outData++ = 0x00;
 
-	// This occurs in the music tracks of LB1 Amiga, when using the MT-32
-	// driver (bug #3297881)
-	if (!containsMidiData)
-		warning("MIDI parser: the requested SCI0 sound has no MIDI note data for the currently selected sound driver");
+// This occurs in the music tracks of LB1 Amiga, when using the MT-32
+// driver (bug #3297881)
+if (!containsMidiData)
+warning("MIDI parser: the requested SCI0 sound has no MIDI note data for the currently selected sound driver");
 }
 
 void MidiParser_SCI::resetStateTracking() {
@@ -414,7 +414,7 @@ void MidiParser_SCI::sendInitCommands() {
 			sendToDriver(0xB0 | i, 0x0A, 64);	// Reset panning to center
 			sendToDriver(0xB0 | i, 0x40, 0);	// Reset hold pedal to none
 			sendToDriver(0xB0 | i, 0x4E, 0);	// Reset velocity to none
-			sendToDriver(0xE0 | i,    0, 64);	// Reset pitch wheel to center
+			sendToDriver(0xE0 | i, 0, 64);	// Reset pitch wheel to center
 		}
 	}
 }
@@ -452,6 +452,10 @@ void MidiParser_SCI::sendToDriver(uint32 midi) {
 		// CHECKME: Should we send this on to the driver?
 		return;
 	}
+
+	/*if ((midi & 0xFFF0) == 0x4BB0) {
+		return;
+	}*/
 
 	if ((midi & 0xFFF0) == 0x07B0) {
 		// someone trying to set channel volume?

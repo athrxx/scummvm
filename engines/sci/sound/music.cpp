@@ -417,12 +417,15 @@ void SciMusic::soundInitSnd(MusicEntry *pSnd) {
 				SoundResource::Channel &chan = track->channels[i];
 
 				pSnd->_usedChannels[i] = chan.number;
+				if (chan.number == 0x0F)
+					continue;
+
 				pSnd->_chan[chan.number]._dontRemap = (chan.flags & 2);
-				pSnd->_chan[chan.number]._prio = chan.prio;
-				pSnd->_chan[chan.number]._voices = chan.poly;
+				pSnd->_chan[chan.number]._prio = track->channels[i].data[1] >> 4;//  chan.prio;
+				pSnd->_chan[chan.number]._voices = track->channels[i].data[1] & 0x0F; //chan.poly;
 
 				// CHECKME: Some SCI versions use chan.flags & 1 for this:
-				pSnd->_chan[chan.number]._dontMap = false;
+				pSnd->_chan[chan.number]._dontMap = (chan.flags & 1);
 
 				// FIXME: Most MIDI tracks use the first 10 bytes for
 				// fixed MIDI commands. SSCI skips those the first iteration,
@@ -453,6 +456,7 @@ void SciMusic::soundInitSnd(MusicEntry *pSnd) {
 			pSnd->pMidiParser->mainThreadEnd();
 		}
 	}
+	remapChannels(true);
 }
 
 void SciMusic::soundPlay(MusicEntry *pSnd) {
@@ -1295,7 +1299,7 @@ ChannelRemapping *SciMusic::determineChannelMap() {
 			int prio = channel._prio;
 			if (prio > 0) {
 				// prio > 0 means non-essential
-				prio = (16 - prio) + 16*songIndex;
+				prio = (16 - prio) + 16 * songIndex;
 			}
 
 			if (devChannel == -1 && prio > 0) {
