@@ -616,6 +616,12 @@ SoundChannel_PC9801_FM4OP::SoundChannel_PC9801_FM4OP(uint8 id, PC98AudioCore *pc
 void SoundChannel_PC9801_FM4OP::programChange(uint8 program) {
 	static const uint8 carrier[] = { 0x10, 0x10, 0x10, 0x10, 0x30, 0x70, 0x70, 0xF0 };
 	static const uint8 steps[] = { 0, 16, 8, 24 };
+
+	if ((uint32)program * _patchSize >= _instrumentData.size()) {
+		warning("SoundChannel_PC9801_FM4OP::programChange(): Encountered invalid program change '%d'", program);
+		return;
+	}
+
 	SciSpan<const uint8> data = _instrumentData.subspan(program * _patchSize);
 
 	if (_version == SCI_VERSION_1_LATE) {
@@ -725,6 +731,11 @@ void SoundChannel_PC9801_FM2OP::reset() {
 }
 
 void SoundChannel_PC9801_FM2OP::programChange(uint8 program) {
+	if ((uint32)program * _patchSize + _patchOffset >= _instrumentData.size()) {
+		warning("SoundChannel_PC9801_FM2OP::programChange(): Encountered invalid program change '%d'", program);
+		return;
+	}
+
 	SciSpan<const uint8> data = _instrumentData.subspan(program * _patchSize + _patchOffset);
 
 	programChangeInit(data);
@@ -890,6 +901,11 @@ void SoundChannel_PC9801_SSG::toggleNoiseGenerator(bool enable) {
 }
 
 void SoundChannel_PC9801_SSG::programChange(uint8 program) {
+	if ((uint32)program * _patchSize + _patchOffset >= _instrumentData.size()) {
+		warning("SoundChannel_PC9801_SSG::programChange(): Encountered invalid program change '%d'", program);
+		return;
+	}
+
 	_selectedInstrument = _instrumentData.subspan(program * _patchSize + _patchOffset);
 
 	if (_version == SCI_VERSION_1_LATE) {
