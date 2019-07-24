@@ -1,7 +1,6 @@
 MODULE := audio
 
 MODULE_OBJS := \
-	adlib.o \
 	audiostream.o \
 	fmopl.o \
 	mididrv.o \
@@ -46,6 +45,7 @@ MODULE_OBJS := \
 	softsynth/opl/dbopl.o \
 	softsynth/opl/dosbox.o \
 	softsynth/opl/mame.o \
+	softsynth/opl/oplplugins.o \
 	softsynth/fmtowns_pc98/pc98_audio.o \
 	softsynth/fmtowns_pc98/towns_audio.o \
 	softsynth/fmtowns_pc98/towns_euphony.o \

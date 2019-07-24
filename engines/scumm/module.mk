@@ -30,6 +30,7 @@ MODULE_OBJS := \
 	imuse/instrument.o \
 	imuse/sysex_samnmax.o \
 	imuse/sysex_scumm.o \
+	imuse/drivers/adlib.o \
 	imuse/drivers/amiga.o \
 	imuse/drivers/fmtowns.o \
 	imuse/drivers/mac_m68k.o \
