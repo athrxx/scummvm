@@ -20,41 +20,23 @@
  *
  */
 
-#include "audio/musicplugin.h"
-#include "common/translation.h"
-#include "common/error.h"
-#include "common/system.h"
+#ifndef AUDIO_MIDIRECEIVER_H
+#define AUDIO_MIDIRECEIVER_H
 
+#include "common/scummsys.h"
 
- // Plugin interface
+namespace Audio {
 
-class AdLibEmuAudioPlugin : public AudioPluginObject {
+class MidiReceiver {
 public:
-	const char *getName() const {
-		return _s("AdLib emulator");
-	}
+	MidiReceiver() {}
+	~MidiReceiver() {}
 
-	const char *getId() const {
-		return "adlib";
-	}
-
-	MusicDevices getDevices() const;
-	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
+	virtual void r_message(uint32 msg) = 0;
+	virtual void r_sysex(const uint8 *msg, uint16 length) = 0;
+	virtual bool r_ready() const = 0;
 };
 
-MusicDevices AdLibEmuAudioPlugin::getDevices() const {
-	MusicDevices devices;
-	devices.push_back(MusicDevice(this, "", MT_ADLIB));
-	return devices;
-}
+} // end of namespace Audio
 
-Common::Error AdLibEmuAudioPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
-	*mididriver = 0;
-	return Common::kNoError;
-}
-
-//#if PLUGIN_ENABLED_DYNAMIC(ADLIB)
-	//REGISTER_PLUGIN_DYNAMIC(ADLIB, PLUGIN_TYPE_MUSIC, AdLibEmuAudioPlugin);
-//#else
-REGISTER_PLUGIN_STATIC(ADLIB, PLUGIN_TYPE_MUSIC, AdLibEmuAudioPlugin);
-//#endif
+#endif

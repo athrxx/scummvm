@@ -344,7 +344,7 @@ void CMSEmulator::portWriteIntern(int chip, int offset, int data) {
 	}
 }
 
-class CMSMusicPlugin : public NullMusicPlugin {
+class CMSAudioPlugin : public NullAudioPlugin {
 public:
 	const char *getName() const {
 		return _s("Creative Music System emulator");
@@ -357,14 +357,14 @@ public:
 	MusicDevices getDevices() const;
 };
 
-MusicDevices CMSMusicPlugin::getDevices() const {
+MusicDevices CMSAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	devices.push_back(MusicDevice(this, "", MT_CMS));
 	return devices;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(CMS)
-	//REGISTER_PLUGIN_DYNAMIC(CMS, PLUGIN_TYPE_MUSIC, CMSMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(CMS, PLUGIN_TYPE_MUSIC, CMSAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(CMS, PLUGIN_TYPE_MUSIC, CMSMusicPlugin);
+	REGISTER_PLUGIN_STATIC(CMS, PLUGIN_TYPE_MUSIC, CMSAudioPlugin);
 //#endif

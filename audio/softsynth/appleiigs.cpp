@@ -27,7 +27,7 @@
 //  and also is not part of the midi driver architecture. But we need the plugin for the options
 //  menu in the launcher and for MidiDriver::detectDevice() which is more or less used by all engines.)
 
-class AppleIIGSMusicPlugin : public NullMusicPlugin {
+class AppleIIGSAudioPlugin : public NullAudioPlugin {
 public:
 	const char *getName() const {
 		return _s("Apple II GS emulator (NOT IMPLEMENTED)");
@@ -40,14 +40,14 @@ public:
 	MusicDevices getDevices() const;
 };
 
-MusicDevices AppleIIGSMusicPlugin::getDevices() const {
+MusicDevices AppleIIGSAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	devices.push_back(MusicDevice(this, "", MT_APPLEIIGS));
 	return devices;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(APPLEIIGS)
-	//REGISTER_PLUGIN_DYNAMIC(APPLEIIGS, PLUGIN_TYPE_MUSIC, AppleIIGSMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(APPLEIIGS, PLUGIN_TYPE_MUSIC, AppleIIGSAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(APPLEIIGS, PLUGIN_TYPE_MUSIC, AppleIIGSMusicPlugin);
+	REGISTER_PLUGIN_STATIC(APPLEIIGS, PLUGIN_TYPE_MUSIC, AppleIIGSAudioPlugin);
 //#endif

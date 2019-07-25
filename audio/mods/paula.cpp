@@ -297,7 +297,7 @@ float Paula::filterCalculateA0(int rate, int cutoff) {
 //  and also is not part of the midi driver architecture. But we need the plugin for the options
 //  menu in the launcher and for MidiDriver::detectDevice() which is more or less used by all engines.)
 
-class AmigaMusicPlugin : public NullMusicPlugin {
+class AmigaAudioPlugin : public NullAudioPlugin {
 public:
 	const char *getName() const {
 		return _s("Amiga Audio emulator");
@@ -310,14 +310,14 @@ public:
 	MusicDevices getDevices() const;
 };
 
-MusicDevices AmigaMusicPlugin::getDevices() const {
+MusicDevices AmigaAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	devices.push_back(MusicDevice(this, "", MT_AMIGA));
 	return devices;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(AMIGA)
-	//REGISTER_PLUGIN_DYNAMIC(AMIGA, PLUGIN_TYPE_MUSIC, AmigaMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(AMIGA, PLUGIN_TYPE_MUSIC, AmigaAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(AMIGA, PLUGIN_TYPE_MUSIC, AmigaMusicPlugin);
+	REGISTER_PLUGIN_STATIC(AMIGA, PLUGIN_TYPE_MUSIC, AmigaAudioPlugin);
 //#endif

@@ -24,6 +24,7 @@
 #define TOWNS_PC98_AUDIODRIVER_H
 
 #include "audio/softsynth/fmtowns_pc98/pc98_audio.h"
+#include "common/mutex.h"
 
 class TownsPC98_MusicChannel;
 class TownsPC98_MusicChannelSSG;
@@ -32,13 +33,20 @@ class TownsPC98_SfxChannel;
 class TownsPC98_MusicChannelPCM;
 #endif
 
-class TownsPC98_AudioDriver : public PC98AudioPluginDriver {
+class TownsPC98_AudioDriver : public Audio::TimerCallbackReceiver {
 friend class TownsPC98_MusicChannel;
 friend class TownsPC98_MusicChannelSSG;
 friend class TownsPC98_SfxChannel;
 #ifndef DISABLE_PC98_RHYTHM_CHANNEL
 friend class TownsPC98_MusicChannelPCM;
 #endif
+public:
+	enum EmuType {
+		kTypeFMTowns = 0,
+		kType980126 = 1,
+		kType980186 = 2
+	};
+
 public:
 	TownsPC98_AudioDriver(Audio::Mixer *mixer, EmuType type);
 	~TownsPC98_AudioDriver();
@@ -115,6 +123,8 @@ private:
 	static const uint8 _levelPresetFMTOWNS[24];
 	static const uint8 _levelPresetPC98[24];
 	const uint8 *_levelPresets;
+
+	Common::Mutex _mutex;
 
 	bool _ready;
 };

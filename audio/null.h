@@ -38,7 +38,7 @@ public:
 
 // Plugin interface
 
-class NullMusicPlugin : public MusicPluginObject {
+class NullAudioPlugin : public AudioPluginObject {
 public:
 	virtual const char *getName() const {
 		return _s("No music");

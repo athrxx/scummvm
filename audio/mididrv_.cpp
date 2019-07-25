@@ -32,6 +32,7 @@
 #include "audio/mididrv.h"
 #include "audio/musicplugin.h"
 
+/*
 const byte MidiDriver::_mt32ToGm[128] = {
 //	  0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
 	  0,   1,   0,   2,   4,   4,   5,   3,  16,  17,  18,  16,  16,  19,  20,  21, // 0x
@@ -94,7 +95,7 @@ MusicType MidiDriver::getMusicType(MidiDriver::DeviceHandle handle) {
 	if (handle) {
 		const PluginList p = MusicMan.getPlugins();
 		for (PluginList::const_iterator m = p.begin(); m != p.end(); m++) {
-			MusicDevices i = (*m)->get<MusicPluginObject>().getDevices();
+			MusicDevices i = (*m)->get<AudioPluginObject>().getDevices();
 			for (MusicDevices::iterator d = i.begin(); d != i.end(); d++) {
 				if (handle == d->getHandle())
 					return d->getMusicType();
@@ -109,7 +110,7 @@ Common::String MidiDriver::getDeviceString(DeviceHandle handle, DeviceStringType
 	if (handle) {
 		const PluginList p = MusicMan.getPlugins();
 		for (PluginList::const_iterator m = p.begin(); m != p.end(); m++) {
-			MusicDevices i = (*m)->get<MusicPluginObject>().getDevices();
+			MusicDevices i = (*m)->get<AudioPluginObject>().getDevices();
 			for (MusicDevices::iterator d = i.begin(); d != i.end(); d++) {
 				if (handle == d->getHandle()) {
 					if (type == kDriverName)
@@ -281,7 +282,7 @@ MidiDriver::DeviceHandle MidiDriver::detectDevice(int flags) {
 				// If MT32 is preferred we try for the first available device with music type 'MT_MT32' (usually the mt32 emulator).
 				if (flags & MDT_PREFER_MT32) {
 					for (PluginList::const_iterator m = p.begin(); m != p.end(); ++m) {
-						MusicDevices i = (*m)->get<MusicPluginObject>().getDevices();
+						MusicDevices i = (*m)->get<AudioPluginObject>().getDevices();
 						for (MusicDevices::iterator d = i.begin(); d != i.end(); ++d) {
 							if (d->getMusicType() == MT_MT32) {
 								hdl = d->getHandle();
@@ -296,7 +297,7 @@ MidiDriver::DeviceHandle MidiDriver::detectDevice(int flags) {
 				// MT-32 is preferred or if MT-32 is preferred but all other devices have failed.
 				if (!(flags & MDT_PREFER_MT32) || flags == (MDT_PREFER_MT32 | MDT_MIDI)) {
 					for (PluginList::const_iterator m = p.begin(); m != p.end(); ++m) {
-						MusicDevices i = (*m)->get<MusicPluginObject>().getDevices();
+						MusicDevices i = (*m)->get<AudioPluginObject>().getDevices();
 						for (MusicDevices::iterator d = i.begin(); d != i.end(); ++d) {
 							if (d->getMusicType() == MT_GM || d->getMusicType() == MT_GS) {
 								hdl = d->getHandle();
@@ -349,7 +350,7 @@ MidiDriver::DeviceHandle MidiDriver::detectDevice(int flags) {
 		}
 
 		for (PluginList::const_iterator m = p.begin(); m != p.end(); ++m) {
-			MusicDevices i = (*m)->get<MusicPluginObject>().getDevices();
+			MusicDevices i = (*m)->get<AudioPluginObject>().getDevices();
 			for (MusicDevices::iterator d = i.begin(); d != i.end(); ++d) {
 				if (d->getMusicType() == tp) {
 					hdl = d->getHandle();
@@ -367,7 +368,7 @@ MidiDriver *MidiDriver::createMidi(MidiDriver::DeviceHandle handle) {
 	MidiDriver *driver = 0;
 	const PluginList p = MusicMan.getPlugins();
 	for (PluginList::const_iterator m = p.begin(); m != p.end(); m++) {
-		const MusicPluginObject &musicPlugin = (*m)->get<MusicPluginObject>();
+		const AudioPluginObject &musicPlugin = (*m)->get<AudioPluginObject>();
 		if (getDeviceString(handle, MidiDriver::kDriverId).equals(musicPlugin.getId()))
 			musicPlugin.createInstance(&driver, handle);
 	}
@@ -378,7 +379,7 @@ MidiDriver *MidiDriver::createMidi(MidiDriver::DeviceHandle handle) {
 bool MidiDriver::checkDevice(MidiDriver::DeviceHandle handle) {
 	const PluginList p = MusicMan.getPlugins();
 	for (PluginList::const_iterator m = p.begin(); m != p.end(); m++) {
-		const MusicPluginObject &musicPlugin = (*m)->get<MusicPluginObject>();
+		const AudioPluginObject &musicPlugin = (*m)->get<AudioPluginObject>();
 		if (getDeviceString(handle, MidiDriver::kDriverId).equals(musicPlugin.getId()))
 			return musicPlugin.checkDevice(handle);
 	}
@@ -393,7 +394,7 @@ MidiDriver::DeviceHandle MidiDriver::getDeviceHandle(const Common::String &ident
 		error("MidiDriver::getDeviceHandle: Music plugins must be loaded prior to calling this method");
 
 	for (PluginList::const_iterator m = p.begin(); m != p.end(); m++) {
-		MusicDevices i = (*m)->get<MusicPluginObject>().getDevices();
+		MusicDevices i = (*m)->get<AudioPluginObject>().getDevices();
 		for (MusicDevices::iterator d = i.begin(); d != i.end(); d++) {
 			// The music driver id isn't unique, but it will match
 			// driver's first device. This is useful when selecting
@@ -418,3 +419,4 @@ void MidiDriver::sendGMReset() {
 	sysEx(resetSysEx, sizeof(resetSysEx));
 	g_system->delayMillis(100);
 }
+*/

@@ -943,10 +943,10 @@ TownsPC98_FmSynth::TownsPC98_FmSynth(Audio::Mixer *mixer, EmuType type) :
 #ifndef DISABLE_PC98_RHYTHM_CHANNEL
 	_prc(0),
 #endif
-	_numChan(type == kType26 ? 3 : 6), _numSSG(type == kTypeTowns ? 0 : 3),
-	_hasPercussion(type == kType86 ? true : false),
+	_numChan(type == kType980126 ? 3 : 6), _numSSG(type == kTypeFMTowns ? 0 : 3),
+	_hasPercussion(type == kType980186 ? true : false),
 	_oprRates(0), _oprRateshift(0), _oprAttackDecay(0), _oprFrq(0), _oprSinTbl(0), _oprLevelOut(0), _oprDetune(0),
-	 _rtt(type == kTypeTowns ? 0x514767 : 0x5B8D80), _baserate(55125.0f / (float)mixer->getOutputRate()),
+	 _rtt(type == kTypeFMTowns ? 0x514767 : 0x5B8D80), _baserate(55125.0f / (float)mixer->getOutputRate()),
 	_volMaskA(0), _volMaskB(0), _volumeA(255), _volumeB(255), _ready(false) {
 
 	memset(&_timers[0], 0, sizeof(ChipTimer));

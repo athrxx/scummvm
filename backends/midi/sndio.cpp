@@ -118,7 +118,7 @@ void MidiDriver_Sndio::sysEx(const byte *msg, uint16 length) {
 
 // Plugin interface
 
-class SndioMusicPlugin : public MusicPluginObject {
+class SndioAudioPlugin : public AudioPluginObject {
 public:
 	const char *getName() const {
 		return "Sndio";
@@ -132,22 +132,22 @@ public:
 	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
 };
 
-MusicDevices SndioMusicPlugin::getDevices() const {
+MusicDevices SndioAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	devices.push_back(MusicDevice(this, "", MT_GM));
 	return devices;
 }
 
-Common::Error SndioMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
+Common::Error SndioAudioPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
 	*mididriver = new MidiDriver_Sndio();
 
 	return Common::kNoError;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(Sndio)
-	//REGISTER_PLUGIN_DYNAMIC(SNDIO, PLUGIN_TYPE_MUSIC, SndioMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(SNDIO, PLUGIN_TYPE_MUSIC, SndioAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(SNDIO, PLUGIN_TYPE_MUSIC, SndioMusicPlugin);
+	REGISTER_PLUGIN_STATIC(SNDIO, PLUGIN_TYPE_MUSIC, SndioAudioPlugin);
 //#endif
 
 #endif

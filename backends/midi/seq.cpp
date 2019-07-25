@@ -179,7 +179,7 @@ void MidiDriver_SEQ::sysEx(const byte *msg, uint16 length) {
 
 // Plugin interface
 
-class SeqMusicPlugin : public MusicPluginObject {
+class SeqAudioPlugin : public AudioPluginObject {
 public:
 	const char *getName() const {
 		return "SEQ";
@@ -193,7 +193,7 @@ public:
 	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
 };
 
-MusicDevices SeqMusicPlugin::getDevices() const {
+MusicDevices SeqAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	// TODO: Return a different music type depending on the configuration
 	// TODO: List the available devices
@@ -201,16 +201,16 @@ MusicDevices SeqMusicPlugin::getDevices() const {
 	return devices;
 }
 
-Common::Error SeqMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
+Common::Error SeqAudioPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
 	*mididriver = new MidiDriver_SEQ();
 
 	return Common::kNoError;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(SEQ)
-	//REGISTER_PLUGIN_DYNAMIC(SEQ, PLUGIN_TYPE_MUSIC, SeqMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(SEQ, PLUGIN_TYPE_MUSIC, SeqAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(SEQ, PLUGIN_TYPE_MUSIC, SeqMusicPlugin);
+	REGISTER_PLUGIN_STATIC(SEQ, PLUGIN_TYPE_MUSIC, SeqAudioPlugin);
 //#endif
 
 #endif

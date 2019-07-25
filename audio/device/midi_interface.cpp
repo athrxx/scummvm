@@ -20,41 +20,55 @@
  *
  */
 
-#include "audio/musicplugin.h"
-#include "common/translation.h"
-#include "common/error.h"
-#include "common/system.h"
 
+#include "audio/device/device.h"
 
- // Plugin interface
+namespace Audio {
 
-class AdLibEmuAudioPlugin : public AudioPluginObject {
-public:
-	const char *getName() const {
-		return _s("AdLib emulator");
-	}
-
-	const char *getId() const {
-		return "adlib";
-	}
-
-	MusicDevices getDevices() const;
-	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
-};
-
-MusicDevices AdLibEmuAudioPlugin::getDevices() const {
-	MusicDevices devices;
-	devices.push_back(MusicDevice(this, "", MT_ADLIB));
-	return devices;
+MidiInterface::MidiInterface() {
 }
 
-Common::Error AdLibEmuAudioPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
-	*mididriver = 0;
-	return Common::kNoError;
+MidiInterface::~MidiInterface() {
 }
 
-//#if PLUGIN_ENABLED_DYNAMIC(ADLIB)
-	//REGISTER_PLUGIN_DYNAMIC(ADLIB, PLUGIN_TYPE_MUSIC, AdLibEmuAudioPlugin);
-//#else
-REGISTER_PLUGIN_STATIC(ADLIB, PLUGIN_TYPE_MUSIC, AdLibEmuAudioPlugin);
-//#endif
+void MidiInterface::sendMessage(uint8 evnt, uint8 para1, uint8 para2) {
+	sendByte(evnt);
+	sendByte(para1);
+	if (para2)
+		sendByte(para2);
+}
+
+void MidiInterface::sendMessage(uint32 msg) {
+	sendByte(msg & 0xFF);
+	msg >>= 8;
+	sendByte(msg & 0xFF);
+	msg >>= 8;
+	if (msg & 0xFF)
+		sendByte(msg & 0xFF);
+}
+
+void MidiInterface::sendSysex(const uint8 *bytes, uint32 len) {
+	sendByte(0xF0);
+	sendBytes(bytes, len);
+	sendByte(0xF7);
+}
+
+void MidiInterface::metaEvent(byte type, byte *data, uint32 length) {
+}
+	
+void MidiInterface::sendBytes(uint32 numBytes, ...) {
+	va_list args;
+	va_start(args, numBytes);
+	while (numBytes--)
+		sendByte(va_arg(args, uint8));
+	va_end(args);
+}
+
+void MidiInterface::sendBytes(const uint8 *bytes, uint32 len) {
+	if (!bytes || !len)
+		return;
+	while (len--)
+		sendByte(*bytes++);
+}
+
+} // end of namespace Audio

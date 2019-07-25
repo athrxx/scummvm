@@ -135,11 +135,11 @@ private:
 
 class TownsAudioInterfaceInternal : public TownsPC98_FmSynth {
 private:
-	TownsAudioInterfaceInternal(Audio::Mixer *mixer, TownsAudioInterface *owner, TownsAudioInterfacePluginDriver *driver);
+	TownsAudioInterfaceInternal(Audio::Mixer *mixer, TownsAudioInterface *owner, Audio::TimerCallbackReceiver *driver);
 public:
 	~TownsAudioInterfaceInternal();
 
-	static TownsAudioInterfaceInternal *addNewRef(Audio::Mixer *mixer, TownsAudioInterface *owner, TownsAudioInterfacePluginDriver *driver);
+	static TownsAudioInterfaceInternal *addNewRef(Audio::Mixer *mixer, TownsAudioInterface *owner, Audio::TimerCallbackReceiver *driver);
 	static void releaseRef(TownsAudioInterface *owner);
 
 	bool init();
@@ -153,10 +153,10 @@ public:
 	// The first 6 bits are the 6 fm channels. The next 8 bits are pcm channels.
 	void setSoundEffectChanMask(int mask);
 
-private:
-	bool assignPluginDriver(TownsAudioInterface *owner, TownsAudioInterfacePluginDriver *driver);
+	bool assignPluginDriver(TownsAudioInterface *owner, Audio::TimerCallbackReceiver *driver);
 	void removePluginDriver(TownsAudioInterface *owner);
 
+private:
 	void nextTickEx(int32 *buffer, uint32 bufferSize);
 
 	void timerCallbackA();
@@ -262,7 +262,7 @@ private:
 	uint16 _sfxVolume;
 	int _pcmSfxChanMask;
 
-	TownsAudioInterfacePluginDriver *_drv;
+	Audio::TimerCallbackReceiver *_drv;
 	void *_drvOwner;
 	bool _ready;
 
@@ -275,7 +275,7 @@ private:
 	static const uint8 _fmDefaultInstrument[];
 };
 
-TownsAudioInterfaceInternal::TownsAudioInterfaceInternal(Audio::Mixer *mixer, TownsAudioInterface *owner, TownsAudioInterfacePluginDriver *driver) :
+TownsAudioInterfaceInternal::TownsAudioInterfaceInternal(Audio::Mixer *mixer, TownsAudioInterface *owner, Audio::TimerCallbackReceiver *driver) :
 	TownsPC98_FmSynth(mixer, kTypeTowns),
 	_fmInstruments(0), _pcmInstruments(0), _pcmChan(0), _waveTables(0), _waveTablesTotalDataSize(0),
 	_baserate(55125.0f / (float)mixer->getOutputRate()), _tickLength(0), _timer(0), _drv(driver), _drvOwner(owner),
@@ -416,7 +416,7 @@ TownsAudioInterfaceInternal::~TownsAudioInterfaceInternal() {
 	delete[] _pcmChan;
 }
 
-TownsAudioInterfaceInternal *TownsAudioInterfaceInternal::addNewRef(Audio::Mixer *mixer, TownsAudioInterface *owner, TownsAudioInterfacePluginDriver *driver) {
+TownsAudioInterfaceInternal *TownsAudioInterfaceInternal::addNewRef(Audio::Mixer *mixer, TownsAudioInterface *owner, Audio::TimerCallbackReceiver *driver) {
 	_refCount++;
 	if (_refCount == 1 && _refInstance == 0)
 		_refInstance = new TownsAudioInterfaceInternal(mixer, owner, driver);
@@ -514,10 +514,10 @@ void TownsAudioInterfaceInternal::setSoundEffectChanMask(int mask) {
 	setVolumeChannelMasks(~mask, mask);
 }
 
-bool TownsAudioInterfaceInternal::assignPluginDriver(TownsAudioInterface *owner, TownsAudioInterfacePluginDriver *driver) {
+bool TownsAudioInterfaceInternal::assignPluginDriver(TownsAudioInterface *owner, Audio::TimerCallbackReceiver *driver) {
 	Common::StackLock lock(_mutex);
-	if (_refCount <= 1)
-		return true;
+	//if (_refCount <= 1)
+	//7	return true;
 
 	if (_drv) {
 		if (driver && driver != _drv)
@@ -1941,8 +1941,9 @@ void TownsAudio_WaveTable::clear() {
 	data = 0;
 }
 
-TownsAudioInterface::TownsAudioInterface(Audio::Mixer *mixer, TownsAudioInterfacePluginDriver *driver) {
+TownsAudioInterface::TownsAudioInterface(Audio::Mixer *mixer, Audio::TimerCallbackReceiver *driver) : PortHandler(SND_TOWNS) {
 	_intf = TownsAudioInterfaceInternal::addNewRef(mixer, this, driver);
+	_addrc[0] = _addrc[1] = 0;
 }
 
 TownsAudioInterface::~TownsAudioInterface() {
@@ -1974,4 +1975,68 @@ void TownsAudioInterface::setSoundEffectVolume(int volume) {
 
 void TownsAudioInterface::setSoundEffectChanMask(int mask) {
 	_intf->setSoundEffectChanMask(mask);
+}
+
+uint8 TownsAudioInterface::p_read(uint32 port) {
+	uint8 val = 0;
+	if (port == 0x4DA)
+		val = _intf->callback(21, 0, _addrc[0]);
+	else if (port == 0x4DE)
+		val = _intf->callback(21, 1, _addrc[1]);
+	return val;
+}
+
+void TownsAudioInterface::p_write(uint32 port, uint8 val) {
+	if (port == 0x4D8)
+		_addrc[0] = val;
+	else if (port == 0x4DA)
+		_intf->callback(20, 0, _addrc[0], val);
+	else if (port == 0x4DC)
+		_addrc[1] = val;
+	else if (port == 0x4DE)
+		_intf->callback(20, 1, _addrc[1], val);
+}
+
+int TownsAudioInterface::p_opcode(int command, va_list &args) {
+	return _intf->processCommand(command, args);
+}
+
+int TownsAudioInterface::p_setCbReceiver(Audio::TimerCallbackReceiver *cb) {
+	int res = 0;
+	if (cb)
+		res = _intf->assignPluginDriver(this, cb) ? 0 : 2;
+	else
+		_intf->removePluginDriver(this);
+	return 0;
+}
+
+int TownsAudioInterface::p_setMusicVolume(int vol) {
+	setMusicVolume(vol);
+	return 0;
+}
+
+int TownsAudioInterface::p_setSfxVolume(int vol) {
+	setSoundEffectVolume(vol);
+	return 0;
+}
+
+int TownsAudioInterface::p_setSpeechVolume(int vol) {
+	// The only FM-Towns game supported by ScummVM that has speech is INDY4.
+	// And the SCUMM engine handles speech separately from this driver. So
+	// there is no need for this atm.
+	return -1;
+}
+
+int TownsAudioInterface::p_property(int prop, int value) {
+	int res = 0;
+
+	switch (prop) {
+	case Audio::Port::kPROP_VOLUMECHANNELMASK:
+		setSoundEffectChanMask(value);
+		break;
+	default:
+		break;
+	}
+
+	return res;
 }

@@ -3,7 +3,6 @@ MODULE := audio
 MODULE_OBJS := \
 	audiostream.o \
 	fmopl.o \
-	mididrv.o \
 	midiparser_qt.o \
 	midiparser_smf.o \
 	midiparser_xmidi.o \
@@ -13,7 +12,6 @@ MODULE_OBJS := \
 	miles_mt32.o \
 	mixer.o \
 	mpu401.o \
-	musicplugin.o \
 	null.o \
 	timestamp.o \
 	decoders/3do.o \
@@ -31,6 +29,11 @@ MODULE_OBJS := \
 	decoders/vorbis.o \
 	decoders/wave.o \
 	decoders/xa.o \
+	device/audioplugin.o \
+	device/device.o \
+	device/midi_interface.o \
+	device/porthandler_arduino.o \
+	device/porthandler_midi.o \
 	mods/infogrames.o \
 	mods/maxtrax.o \
 	mods/mod_xm_s3m.o \

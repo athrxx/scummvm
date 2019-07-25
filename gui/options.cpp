@@ -1117,7 +1117,7 @@ void OptionsDialog::addAudioControls(GuiObject *boss, const Common::String &pref
 
 	const PluginList p = MusicMan.getPlugins();
 	for (PluginList::const_iterator m = p.begin(); m != p.end(); ++m) {
-		MusicDevices i = (*m)->get<MusicPluginObject>().getDevices();
+		MusicDevices i = (*m)->get<AudioPluginObject>().getDevices();
 		for (MusicDevices::iterator d = i.begin(); d != i.end(); ++d) {
 			Common::String deviceGuiOption = MidiDriver::musicType2GUIO(d->getMusicType());
 
@@ -1157,7 +1157,7 @@ void OptionsDialog::addMIDIControls(GuiObject *boss, const Common::String &prefi
 	// Make sure the null device is the first one in the list to avoid undesired
 	// auto detection for users who don't have a saved setting yet.
 	for (PluginList::const_iterator m = p.begin(); m != p.end(); ++m) {
-		MusicDevices i = (*m)->get<MusicPluginObject>().getDevices();
+		MusicDevices i = (*m)->get<AudioPluginObject>().getDevices();
 		for (MusicDevices::iterator d = i.begin(); d != i.end(); ++d) {
 			if (d->getMusicDriverId() == "null")
 				_gmDevicePopUp->appendEntry(_("Don't use General MIDI music"), d->getHandle());
@@ -1165,7 +1165,7 @@ void OptionsDialog::addMIDIControls(GuiObject *boss, const Common::String &prefi
 	}
 	// Now we add the other devices.
 	for (PluginList::const_iterator m = p.begin(); m != p.end(); ++m) {
-		MusicDevices i = (*m)->get<MusicPluginObject>().getDevices();
+		MusicDevices i = (*m)->get<AudioPluginObject>().getDevices();
 		for (MusicDevices::iterator d = i.begin(); d != i.end(); ++d) {
 			if (d->getMusicType() >= MT_GM) {
 				if (d->getMusicType() != MT_MT32)
@@ -1220,7 +1220,7 @@ void OptionsDialog::addMT32Controls(GuiObject *boss, const Common::String &prefi
 	// Make sure the null device is the first one in the list to avoid undesired
 	// auto detection for users who don't have a saved setting yet.
 	for (PluginList::const_iterator m = p.begin(); m != p.end(); ++m) {
-		MusicDevices i = (*m)->get<MusicPluginObject>().getDevices();
+		MusicDevices i = (*m)->get<AudioPluginObject>().getDevices();
 		for (MusicDevices::iterator d = i.begin(); d != i.end(); ++d) {
 			if (d->getMusicDriverId() == "null")
 				_mt32DevicePopUp->appendEntry(_("Don't use Roland MT-32 music"), d->getHandle());
@@ -1228,7 +1228,7 @@ void OptionsDialog::addMT32Controls(GuiObject *boss, const Common::String &prefi
 	}
 	// Now we add the other devices.
 	for (PluginList::const_iterator m = p.begin(); m != p.end(); ++m) {
-		MusicDevices i = (*m)->get<MusicPluginObject>().getDevices();
+		MusicDevices i = (*m)->get<AudioPluginObject>().getDevices();
 		for (MusicDevices::iterator d = i.begin(); d != i.end(); ++d) {
 			if (d->getMusicType() >= MT_GM)
 				_mt32DevicePopUp->appendEntry(d->getCompleteName(), d->getHandle());
@@ -1343,7 +1343,7 @@ bool OptionsDialog::loadMusicDeviceSetting(PopUpWidget *popup, Common::String se
 		const PluginList p = MusicMan.getPlugins();
 
 		for (PluginList::const_iterator m = p.begin(); m != p.end(); ++m) {
-			MusicDevices i = (*m)->get<MusicPluginObject>().getDevices();
+			MusicDevices i = (*m)->get<AudioPluginObject>().getDevices();
 			for (MusicDevices::iterator d = i.begin(); d != i.end(); ++d) {
 				if (setting.empty() ? (preferredType == d->getMusicType()) : (drv == d->getCompleteId())) {
 					popup->setSelectedTag(d->getHandle());
@@ -1363,7 +1363,7 @@ void OptionsDialog::saveMusicDeviceSetting(PopUpWidget *popup, Common::String se
 	const PluginList p = MusicMan.getPlugins();
 	bool found = false;
 	for (PluginList::const_iterator m = p.begin(); m != p.end() && !found; ++m) {
-		MusicDevices i = (*m)->get<MusicPluginObject>().getDevices();
+		MusicDevices i = (*m)->get<AudioPluginObject>().getDevices();
 		for (MusicDevices::iterator d = i.begin(); d != i.end(); ++d) {
 			if (d->getHandle() == popup->getSelectedTag()) {
 				ConfMan.set(setting, d->getCompleteId(), _domain);

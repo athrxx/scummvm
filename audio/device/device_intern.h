@@ -20,41 +20,37 @@
  *
  */
 
-#include "audio/musicplugin.h"
-#include "common/translation.h"
-#include "common/error.h"
-#include "common/system.h"
+#ifndef AUDIO_DEVICEINTERN_H
+#define AUDIO_DEVICEINTERN_H
 
+// This file provides declarations for all device functions that are required for the
+// launcher or for the plugin and device code but needn't be exposed to the engines.
 
- // Plugin interface
+#ifndef AUDIO_DEVICE_H
+#include "audio/device/device.h"
+#endif
 
-class AdLibEmuAudioPlugin : public AudioPluginObject {
-public:
-	const char *getName() const {
-		return _s("AdLib emulator");
-	}
+typedef Common::Array<SoundType> SoundTypes;
 
-	const char *getId() const {
-		return "adlib";
-	}
+namespace Audio {
 
-	MusicDevices getDevices() const;
-	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
+enum DeviceDescriptionType {
+	kPluginName = 0,
+	kPluginId,
+	kDeviceName,
+	kDeviceId
 };
 
-MusicDevices AdLibEmuAudioPlugin::getDevices() const {
-	MusicDevices devices;
-	devices.push_back(MusicDevice(this, "", MT_ADLIB));
-	return devices;
-}
+DeviceHandle getDeviceHandle(const Common::String &identifier);
 
-Common::Error AdLibEmuAudioPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
-	*mididriver = 0;
-	return Common::kNoError;
-}
+SoundTypes enumHardwareSoundTypes();
 
-//#if PLUGIN_ENABLED_DYNAMIC(ADLIB)
-	//REGISTER_PLUGIN_DYNAMIC(ADLIB, PLUGIN_TYPE_MUSIC, AdLibEmuAudioPlugin);
-//#else
-REGISTER_PLUGIN_STATIC(ADLIB, PLUGIN_TYPE_MUSIC, AdLibEmuAudioPlugin);
-//#endif
+const char *getSoundTypeDescription(SoundType type);
+
+Common::String &getDeviceDescription(DeviceHandle handle, DeviceDescriptionType type);
+
+bool checkDevice(DeviceHandle handle);
+
+} // end of namespace Audio
+
+#endif

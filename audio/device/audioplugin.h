@@ -24,60 +24,80 @@
 #define AUDIO_MUSICPLUGIN_H
 
 #include "base/plugins.h"
-#include "audio/mididrv.h"
-#include "common/list.h"
+#include "common/str.h"
+#include "audio/device/device_intern.h"
+
 
 namespace Common {
 class Error;
 }
 
-class MusicPluginObject;
+class AudioPluginObject;
 
 /**
- * Description of a Music device. Used to list the devices a Music driver
- * can manage and their capabilities.
- * A device with an empty name means the default device.
+ * Description of an audio device. Used to list the capabilities of the devices
+ * that an audio plugin can manage. A device with an empty name refers to the default device.
  */
-class MusicDevice {
+class AudioDevice {
 public:
-	MusicDevice(MusicPluginObject const *musicPlugin, Common::String name, MusicType mt);
+	AudioDevice(AudioPluginObject const *audioPlugin, Common::String name, SoundType type);
 
-	Common::String &getName() { return _name; }
-	Common::String &getMusicDriverName() { return _musicDriverName; }
-	Common::String &getMusicDriverId() { return _musicDriverId; }
-	MusicType getMusicType() { return _type; }
+	Common::String &getDeviceName();
+	Common::String &getPluginName();
+	Common::String &getPluginId();
+	//AudioPluginObject const *getPlugin() ;
+	SoundType getSoundType();
 
 	/**
 	 * Returns a user readable string that contains the name of the current
-	 * device name (if it isn't the default one) and the name of the driver.
+	 * device (if it isn't the default one), the name of the plugin and the
+	 * sound type description.
 	 */
 	Common::String getCompleteName();
 
 	/**
 	 * Returns a user readable string that contains the name of the current
-	 * device name (if it isn't the default one) and the id of the driver.
+	 * device (if it isn't the default one), the id of the plugin and the
+	 * sound type description.
 	 */
 	Common::String getCompleteId();
 
-	MidiDriver::DeviceHandle getHandle();
+	/**
+	 * Provides a unique device identifier to  be passed on to the engine code.
+	 */
+	Audio::DeviceHandle getHandle() const;
+
+	/**
+	* Checks whether a device can actually be used. This call will be passed
+	* on to the plugin. The actual check take place at plugin level.
+	*/
+	bool check();
+
+	/*
+	* Opens a port like interface to handle the communication between the engines
+	* and the device. This should mostly behave like x86 in/out commands.
+	*/
+	Audio::Port *createPort();
 
 private:
-	Common::String _name;
-	Common::String _musicDriverName;
-	Common::String _musicDriverId;
-	MusicType _type;
+	Common::String _pluginName;
+	Common::String _pluginId;
+	Common::String _soundTypeDescription;
+	Common::String _deviceName;
+	AudioPluginObject const *_plugin;
+	SoundType _soundType;
 };
 
 /** List of music devices. */
-typedef Common::List<MusicDevice> MusicDevices;
+typedef Common::List<AudioDevice> AudioDevices;
 
 /**
- * A MusicPluginObject is essentially a factory for MidiDriver instances with
+ * A AudioPluginObject is essentially a factory for MidiDriver instances with
  * the added ability of listing the available devices and their capabilities.
  */
-class MusicPluginObject : public PluginObject {
+class AudioPluginObject : public PluginObject {
 public:
-	virtual ~MusicPluginObject() {}
+	virtual ~AudioPluginObject() {}
 
 	/**
 	 * Returns a unique string identifier which will be used to save the
@@ -88,20 +108,20 @@ public:
 	/**
 	 * Returns a list of the available devices.
 	 */
-	virtual MusicDevices getDevices() const = 0;
+	virtual AudioDevices getDevices() const = 0;
 
 	/**
 	 * Checks whether a device can actually be used. Currently this is only
 	 * implemented for the MT-32 emulator to check whether the required rom
 	 * files are present.
 	 */
-	virtual bool checkDevice(MidiDriver::DeviceHandle) const { return true; }
+	virtual bool checkDevice(Audio::DeviceHandle) const { return true; }
 
 	/**
 	 * Tries to instantiate a MIDI Driver instance based on the device
 	 * previously detected via MidiDriver::detectDevice()
 	 *
-	 * @param mididriver	Pointer to a pointer which the MusicPluginObject sets
+	 * @param mididriver	Pointer to a pointer which the AudioPluginObject sets
 	 *				to the newly create MidiDriver, or 0 in case of an error
 	 *
 	* @param dev	Pointer to a device to be used then creating the driver instance.
@@ -109,7 +129,8 @@ public:
 	 *
 	 * @return		a Common::Error describing the error which occurred, or kNoError
 	 */
-	virtual Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const = 0;
+	//virtual Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const = 0;
+	virtual Common::Error createPort(Audio::Port **port, Audio::DeviceHandle handle) const = 0;
 };
 
 /**

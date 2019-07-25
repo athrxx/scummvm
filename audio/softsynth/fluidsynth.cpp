@@ -277,7 +277,7 @@ void MidiDriver_FluidSynth::generateSamples(int16 *data, int len) {
 
 // Plugin interface
 
-class FluidSynthMusicPlugin : public MusicPluginObject {
+class FluidSynthAudioPlugin : public AudioPluginObject {
 public:
 	const char *getName() const {
 		return "FluidSynth";
@@ -291,22 +291,22 @@ public:
 	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
 };
 
-MusicDevices FluidSynthMusicPlugin::getDevices() const {
+MusicDevices FluidSynthAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	devices.push_back(MusicDevice(this, "", MT_GM));
 	return devices;
 }
 
-Common::Error FluidSynthMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
+Common::Error FluidSynthAudioPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
 	*mididriver = new MidiDriver_FluidSynth(g_system->getMixer());
 
 	return Common::kNoError;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(FLUIDSYNTH)
-	//REGISTER_PLUGIN_DYNAMIC(FLUIDSYNTH, PLUGIN_TYPE_MUSIC, FluidSynthMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(FLUIDSYNTH, PLUGIN_TYPE_MUSIC, FluidSynthAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(FLUIDSYNTH, PLUGIN_TYPE_MUSIC, FluidSynthMusicPlugin);
+	REGISTER_PLUGIN_STATIC(FLUIDSYNTH, PLUGIN_TYPE_MUSIC, FluidSynthAudioPlugin);
 //#endif
 
 #endif

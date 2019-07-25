@@ -1424,7 +1424,7 @@ int SID::updateClock(cycle_count& delta_t, short* buf, int n, int interleave) {
 //	midi driver architecture. But we need the plugin for the options menu in the launcher
 //	and for MidiDriver::detectDevice() which is more or less used by all engines.)
 
-class C64MusicPlugin : public NullMusicPlugin {
+class C64AudioPlugin : public NullAudioPlugin {
 public:
 	const char *getName() const {
 		return _s("C64 Audio emulator");
@@ -1437,16 +1437,16 @@ public:
 	MusicDevices getDevices() const;
 };
 
-MusicDevices C64MusicPlugin::getDevices() const {
+MusicDevices C64AudioPlugin::getDevices() const {
 	MusicDevices devices;
 	devices.push_back(MusicDevice(this, "", MT_C64));
 	return devices;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(C64)
-	//REGISTER_PLUGIN_DYNAMIC(C64, PLUGIN_TYPE_MUSIC, C64MusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(C64, PLUGIN_TYPE_MUSIC, C64AudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(C64, PLUGIN_TYPE_MUSIC, C64MusicPlugin);
+	REGISTER_PLUGIN_STATIC(C64, PLUGIN_TYPE_MUSIC, C64AudioPlugin);
 //#endif
 
 #endif

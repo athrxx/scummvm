@@ -195,7 +195,7 @@ void MidiDriver_DMEDIA::sysEx (const byte *msg, uint16 length) {
 
 // Plugin interface
 
-class DMediaMusicPlugin : public MusicPluginObject {
+class DMediaAudioPlugin : public AudioPluginObject {
 public:
 	const char *getName() const {
 		return "DMedia";
@@ -209,7 +209,7 @@ public:
 	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
 };
 
-MusicDevices DMediaMusicPlugin::getDevices() const {
+MusicDevices DMediaAudioPlugin::getDevices() const {
 	int numinterfaces;
 	int i;
 	char *portName;
@@ -231,16 +231,16 @@ MusicDevices DMediaMusicPlugin::getDevices() const {
 	return devices;
 }
 
-Common::Error DMediaMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
+Common::Error DMediaAudioPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
 	*mididriver = new MidiDriver_DMEDIA();
 
 	return Common::kNoError;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(DMEDIA)
-	//REGISTER_PLUGIN_DYNAMIC(DMEDIA, PLUGIN_TYPE_MUSIC, DMediaMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(DMEDIA, PLUGIN_TYPE_MUSIC, DMediaAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(DMEDIA, PLUGIN_TYPE_MUSIC, DMediaMusicPlugin);
+	REGISTER_PLUGIN_STATIC(DMEDIA, PLUGIN_TYPE_MUSIC, DMediaAudioPlugin);
 //#endif
 
 #endif

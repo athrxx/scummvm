@@ -512,7 +512,7 @@ void MidiDriver_TIMIDITY::sysEx(const byte *msg, uint16 length) {
 
 // Plugin interface
 
-class TimidityMusicPlugin : public MusicPluginObject {
+class TimidityAudioPlugin : public AudioPluginObject {
 public:
 	const char *getName() const {
 		return "TiMidity";
@@ -526,22 +526,22 @@ public:
 	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
 };
 
-MusicDevices TimidityMusicPlugin::getDevices() const {
+MusicDevices TimidityAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	devices.push_back(MusicDevice(this, "", MT_GM));
 	return devices;
 }
 
-Common::Error TimidityMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
+Common::Error TimidityAudioPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
 	*mididriver = new MidiDriver_TIMIDITY();
 
 	return Common::kNoError;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(TIMIDITY)
-	//REGISTER_PLUGIN_DYNAMIC(TIMIDITY, PLUGIN_TYPE_MUSIC, TimidityMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(TIMIDITY, PLUGIN_TYPE_MUSIC, TimidityAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(TIMIDITY, PLUGIN_TYPE_MUSIC, TimidityMusicPlugin);
+	REGISTER_PLUGIN_STATIC(TIMIDITY, PLUGIN_TYPE_MUSIC, TimidityAudioPlugin);
 //#endif
 
 #endif // defined(USE_TIMIDITY)

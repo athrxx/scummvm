@@ -20,13 +20,17 @@
  *
  */
 
-#include "audio/musicplugin.h"
+#include "audio/softsynth/fmtowns_pc98/pc98_audio.h"
+#include "audio/softsynth/fmtowns_pc98/towns_audio.h"
+#include "audio/device/audioplugin.h"
+#include "audio/device/porthandler.h"
+
 #include "common/translation.h"
 #include "common/error.h"
 #include "common/system.h"
 
 
-class TownsEmuMusicPlugin : public MusicPluginObject {
+class TownsEmuAudioPlugin : public AudioPluginObject {
 public:
 	const char *getName() const {
 		return _s("FM-Towns Audio");
@@ -36,22 +40,22 @@ public:
 		return "towns";
 	}
 
-	MusicDevices getDevices() const;
-	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
+	AudioDevices getDevices() const;
+	Common::Error createPort(Audio::Port **port, Audio::DeviceHandle = 0) const;
 };
 
-MusicDevices TownsEmuMusicPlugin::getDevices() const {
-	MusicDevices devices;
-	devices.push_back(MusicDevice(this, "", MT_TOWNS));
+AudioDevices TownsEmuAudioPlugin::getDevices() const {
+	AudioDevices devices;
+	devices.push_back(AudioDevice(this, "", SND_TOWNS));
 	return devices;
 }
 
-Common::Error TownsEmuMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
-	*mididriver = 0;
-	return Common::kUnknownError;
+Common::Error TownsEmuAudioPlugin::createPort(Audio::Port **port, Audio::DeviceHandle handle) const {
+	*port = new Audio::Port(new TownsAudioInterface(g_system->getMixer(), 0), false);
+	return *port ? Common::kNoError : Common::kUnknownError;
 }
 
-class PC98EmuMusicPlugin : public MusicPluginObject {
+class PC98EmuAudioPlugin : public AudioPluginObject {
 public:
 	const char *getName() const {
 		return _s("PC-98 Audio");
@@ -61,25 +65,26 @@ public:
 		return "pc98";
 	}
 
-	MusicDevices getDevices() const;
-	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
+	AudioDevices getDevices() const;
+	Common::Error createPort(Audio::Port **port, Audio::DeviceHandle) const;
 };
 
-MusicDevices PC98EmuMusicPlugin::getDevices() const {
-	MusicDevices devices;
-	devices.push_back(MusicDevice(this, "", MT_PC98));
+AudioDevices PC98EmuAudioPlugin::getDevices() const {
+	AudioDevices devices;
+	devices.push_back(AudioDevice(this, "", SND_PC98_86));
 	return devices;
 }
 
-Common::Error PC98EmuMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
-	*mididriver = 0;
-	return Common::kUnknownError;
+Common::Error PC98EmuAudioPlugin::createPort(Audio::Port **port, Audio::DeviceHandle dev) const {
+	*port = new Audio::Port(new PC98AudioCore(g_system->getMixer(), 0, Audio::getDeviceSoundType(dev) == SND_PC98_86 ?
+		PC98AudioPluginDriver::EmuType::kType86 : PC98AudioPluginDriver::EmuType::kType26), false);
+	return *port ? Common::kNoError : Common::kUnknownError;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(TOWNS)
-	//REGISTER_PLUGIN_DYNAMIC(TOWNS, PLUGIN_TYPE_MUSIC, TownsEmuMusicPlugin);
-	//REGISTER_PLUGIN_DYNAMIC(TOWNS, PLUGIN_TYPE_MUSIC, TownsEmuMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(TOWNS, PLUGIN_TYPE_MUSIC, TownsEmuAudioPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(TOWNS, PLUGIN_TYPE_MUSIC, TownsEmuAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(TOWNS, PLUGIN_TYPE_MUSIC, TownsEmuMusicPlugin);
-	REGISTER_PLUGIN_STATIC(PC98, PLUGIN_TYPE_MUSIC, PC98EmuMusicPlugin);
+	REGISTER_PLUGIN_STATIC(TOWNS, PLUGIN_TYPE_MUSIC, TownsEmuAudioPlugin);
+	REGISTER_PLUGIN_STATIC(PC98, PLUGIN_TYPE_MUSIC, PC98EmuAudioPlugin);
 //#endif

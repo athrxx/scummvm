@@ -121,7 +121,7 @@ void MidiDriver_STMIDI::sysEx (const byte *msg, uint16 length) {
 
 // Plugin interface
 
-class StMidiMusicPlugin : public MusicPluginObject {
+class StMidiAudioPlugin : public AudioPluginObject {
 public:
 	const char *getName() const {
 		return "STMIDI";
@@ -135,7 +135,7 @@ public:
 	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
 };
 
-MusicDevices StMidiMusicPlugin::getDevices() const {
+MusicDevices StMidiAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	// TODO: Return a different music type depending on the configuration
 	// TODO: List the available devices
@@ -143,16 +143,16 @@ MusicDevices StMidiMusicPlugin::getDevices() const {
 	return devices;
 }
 
-Common::Error StMidiMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
+Common::Error StMidiAudioPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
 	*mididriver = new MidiDriver_STMIDI();
 
 	return Common::kNoError;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(STMIDI)
-	//REGISTER_PLUGIN_DYNAMIC(STMIDI, PLUGIN_TYPE_MUSIC, StMidiMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(STMIDI, PLUGIN_TYPE_MUSIC, StMidiAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(STMIDI, PLUGIN_TYPE_MUSIC, StMidiMusicPlugin);
+	REGISTER_PLUGIN_STATIC(STMIDI, PLUGIN_TYPE_MUSIC, StMidiAudioPlugin);
 //#endif
 
 #endif

@@ -1070,22 +1070,22 @@ TownsPC98_AudioDriver::TownsPC98_AudioDriver(Audio::Mixer *mixer, EmuType type) 
 	_rhythmChannel(0),
 #endif
 	_sfxData(0), _sfxOffs(0), _patchData(0), _sfxBuffer(0), _musicBuffer(0), _trackPtr(0),
-	_levelPresets(type == kTypeTowns ? _levelPresetFMTOWNS : _levelPresetPC98),
-	_updateChannelsFlag(type == kType26 ? 0x07 : 0x3F), _finishedChannelsFlag(0),
-	_updateSSGFlag(type == kTypeTowns ? 0x00 : 0x07), _finishedSSGFlag(0),
-	_updateRhythmFlag(type == kType86 ?
+	_levelPresets(type == kTypeFMTowns ? _levelPresetFMTOWNS : _levelPresetPC98),
+	_updateChannelsFlag(type == kType980126 ? 0x07 : 0x3F), _finishedChannelsFlag(0),
+	_updateSSGFlag(type == kTypeFMTowns ? 0x00 : 0x07), _finishedSSGFlag(0),
+	_updateRhythmFlag(type == kType980186 ?
 #ifndef DISABLE_PC98_RHYTHM_CHANNEL
 	0x01
 #else
 	0x00
 #endif
 	: 0x00),
-	_numChanFM(type == kType26 ? 3 : 6), _numChanSSG(type == kTypeTowns ? 0 : 3), _numChanRHY(type == kType86 ? 1 : 0),
+	_numChanFM(type == kType980126 ? 3 : 6), _numChanSSG(type == kTypeFMTowns ? 0 : 3), _numChanRHY(type == kType980186 ? 1 : 0),
 	_finishedRhythmFlag(0), _updateSfxFlag(0), _finishedSfxFlag(0),
 	_musicTickCounter(0), _regWriteProtect(false),
 	_musicPlaying(false), _sfxPlaying(false), _fading(false), _looping(0), _ready(false) {
 	_sfxOffsets[0] = _sfxOffsets[1] = 0;
-	_pc98a = new PC98AudioCore(mixer, this, type);
+	_pc98a = new PC98AudioCore(mixer, this, (PC98AudioCore::EmuType)type);
 }
 
 TownsPC98_AudioDriver::~TownsPC98_AudioDriver() {
@@ -1174,7 +1174,7 @@ void TownsPC98_AudioDriver::loadMusicData(uint8 *data, bool loadPaused) {
 
 	reset();
 
-	PC98AudioCore::MutexLock lock = _pc98a->stackLockMutex();
+	Common::StackLock lock(_mutex);
 	const uint8 *src_a = _trackPtr = _musicBuffer = data;
 
 	for (uint8 i = 0; i < 3; i++) {
@@ -1223,7 +1223,7 @@ void TownsPC98_AudioDriver::loadSoundEffectData(uint8 *data, uint8 trackNum) {
 		return;
 	}
 
-	PC98AudioCore::MutexLock lock = _pc98a->stackLockMutex();
+	Common::StackLock lock(_mutex);
 	_sfxData = _sfxBuffer = data;
 	_sfxOffsets[0] = READ_LE_UINT16(&_sfxData[(trackNum << 2)]);
 	_sfxOffsets[1] = READ_LE_UINT16(&_sfxData[(trackNum << 2) + 2]);
@@ -1232,7 +1232,7 @@ void TownsPC98_AudioDriver::loadSoundEffectData(uint8 *data, uint8 trackNum) {
 }
 
 void TownsPC98_AudioDriver::reset() {
-	PC98AudioCore::MutexLock lock = _pc98a->stackLockMutex();
+	Common::StackLock lock(_mutex);
 
 	_musicPlaying = false;
 	_sfxPlaying = false;
@@ -1325,6 +1325,7 @@ void TownsPC98_AudioDriver::preventRegisterWrite(bool prevent) {
 }
 
 void TownsPC98_AudioDriver::timerCallbackA() {
+	Common::StackLock lock(_mutex);
 	if (_sfxChannels && _sfxPlaying) {
 		if (_sfxData)
 			startSoundEffect();
@@ -1350,6 +1351,7 @@ void TownsPC98_AudioDriver::timerCallbackA() {
 }
 
 void TownsPC98_AudioDriver::timerCallbackB() {
+	Common::StackLock lock(_mutex);
 	_sfxOffs = 0;
 
 	if (_musicPlaying) {

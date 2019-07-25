@@ -23,21 +23,17 @@
 #ifndef TOWNS_AUDIO_H
 #define TOWNS_AUDIO_H
 
+#include "audio/device/porthandler.h"
+
 namespace Audio {
 class Mixer;
 }
 
 class TownsAudioInterfaceInternal;
 
-class TownsAudioInterfacePluginDriver {
+class TownsAudioInterface : public Audio::PortHandler {
 public:
-	virtual ~TownsAudioInterfacePluginDriver() {}
-	virtual void timerCallback(int timerId) = 0;
-};
-
-class TownsAudioInterface {
-public:
-	TownsAudioInterface(Audio::Mixer *mixer, TownsAudioInterfacePluginDriver *driver);
+	TownsAudioInterface(Audio::Mixer *mixer, Audio::TimerCallbackReceiver *driver);
 	~TownsAudioInterface();
 
 	enum ErrorCode {
@@ -64,8 +60,19 @@ public:
 	// The first 6 bits are the 6 fm channels. The next 8 bits are pcm channels.
 	void setSoundEffectChanMask(int mask);
 
+	// PortHandler interface
+	uint8 p_read(uint32 addr);
+	void p_write(uint32 addr, uint8 val);
+	int p_opcode(int command, va_list &args);
+	int p_setCbReceiver(Audio::TimerCallbackReceiver *cb);
+	int p_setMusicVolume(int vol);
+	int p_setSfxVolume(int vol);
+	int p_setSpeechVolume(int vol);
+	int p_property(int prop, int value);
+
 private:
 	TownsAudioInterfaceInternal *_intf;
+	uint8 _addrc[2];
 };
 
 #endif

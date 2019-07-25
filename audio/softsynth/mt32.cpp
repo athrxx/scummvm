@@ -26,7 +26,7 @@
 #ifdef USE_MT32EMU
 
 #include "audio/softsynth/emumidi.h"
-#include "audio/musicplugin.h"
+#include "audio/device/audioplugin.h"
 #include "audio/mpu401.h"
 
 #include "common/config-manager.h"
@@ -127,8 +127,8 @@ public:
 	void sysEx(const byte *msg, uint16 length);
 
 	uint32 property(int prop, uint32 param);
-	MidiChannel *allocateChannel();
-	MidiChannel *getPercussionChannel();
+	//MidiChannel *allocateChannel();
+	//MidiChannel *getPercussionChannel();
 
 	// AudioStream API
 	bool isStereo() const { return true; }
@@ -141,7 +141,7 @@ public:
 //
 ////////////////////////////////////////
 
-MidiDriver_MT32::MidiDriver_MT32(Audio::Mixer *mixer) : MidiDriver_Emulated(mixer) {
+MidiDriver_MT32::MidiDriver_MT32(Audio::Mixer *mixer) /*: MidiDriver_Emulated(mixer)*/ {
 	_channelMask = 0xFFFF; // Permit all 16 channels by default
 	uint i;
 	for (i = 0; i < ARRAYSIZE(_midiChannels); ++i) {
@@ -431,7 +431,7 @@ void MidiDriver_ThreadedMT32::onTimer() {
 
 // Plugin interface
 
-class MT32EmuMusicPlugin : public MusicPluginObject {
+class MT32EmuAudioPlugin : public AudioPluginObject {
 public:
 	const char *getName() const {
 		return _s("MT-32 emulator");
@@ -441,18 +441,18 @@ public:
 		return "mt32";
 	}
 
-	MusicDevices getDevices() const;
-	bool checkDevice(MidiDriver::DeviceHandle) const;
-	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
+	AudioDevices getDevices() const;
+	bool checkDevice(Audio::DeviceHandle) const;
+	Common::Error createPort(Audio::Port **port, Audio::DeviceHandle = 0) const;
 };
 
-MusicDevices MT32EmuMusicPlugin::getDevices() const {
-	MusicDevices devices;
-	devices.push_back(MusicDevice(this, "", MT_MT32));
+AudioDevices MT32EmuAudioPlugin::getDevices() const {
+	AudioDevices devices;
+	devices.push_back(AudioDevice(this, "", SND_MT32));
 	return devices;
 }
 
-bool MT32EmuMusicPlugin::checkDevice(MidiDriver::DeviceHandle) const {
+bool MT32EmuAudioPlugin::checkDevice(Audio::DeviceHandle) const {
 	if (!((Common::File::exists("MT32_CONTROL.ROM") && Common::File::exists("MT32_PCM.ROM")) ||
 		(Common::File::exists("CM32L_CONTROL.ROM") && Common::File::exists("CM32L_PCM.ROM")))) {
 			warning("The MT-32 emulator requires one of the two following file sets (not bundled with ScummVM):\n Either 'MT32_CONTROL.ROM' and 'MT32_PCM.ROM' or 'CM32L_CONTROL.ROM' and 'CM32L_PCM.ROM'");
@@ -462,16 +462,15 @@ bool MT32EmuMusicPlugin::checkDevice(MidiDriver::DeviceHandle) const {
 	return true;
 }
 
-Common::Error MT32EmuMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
-	*mididriver = new MidiDriver_MT32(g_system->getMixer());
-
+Common::Error MT32EmuAudioPlugin::createPort(Audio::port **port, MidiDriver::DeviceHandle) const {
+	*port = new Audio::Port(new MidiDriver_MT32(g_system->getMixer()), true);
 	return Common::kNoError;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(MT32)
-	//REGISTER_PLUGIN_DYNAMIC(MT32, PLUGIN_TYPE_MUSIC, MT32EmuMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(MT32, PLUGIN_TYPE_MUSIC, MT32EmuAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(MT32, PLUGIN_TYPE_MUSIC, MT32EmuMusicPlugin);
+	REGISTER_PLUGIN_STATIC(MT32, PLUGIN_TYPE_MUSIC, MT32EmuAudioPlugin);
 //#endif
 
 #endif

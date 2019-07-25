@@ -20,42 +20,25 @@
  *
  */
 
-#include "audio/musicplugin.h"
-#include "common/hash-str.h"
-#include "common/translation.h"
+#include "audio/device/porthandler.h"
+#include "audio/device/midi_receiver.h"
 
-MusicDevice::MusicDevice(MusicPluginObject const *musicPlugin, Common::String name, MusicType mt) :
-	_musicDriverName(_(musicPlugin->getName())), _musicDriverId(musicPlugin->getId()),
-	_name(_(name)), _type(mt) {
+namespace Audio {
+
+	PortHandler_Arduino::PortHandler_Arduino(SoundType soundType, MidiReceiver *mr) : PortHandler_Midi(soundType, mr) {
+	_reg[0] = _reg[1] = 0;
 }
 
-Common::String MusicDevice::getCompleteName() {
-	Common::String name;
-
-	if (_name.empty()) {
-		// Default device, just show the driver name
-		name = _musicDriverName;
+void PortHandler_Arduino::p_write(uint32 addr, uint8 val) {
+	addr &= 0x0F;
+	uint8 cid = (addr >> 1) & 1;
+	if (addr & 1) {
+		_reg[cid] = val & 0x7F;
 	} else {
-		// Show both device and driver names
-		name = _name;
-		name += " [";
-		name += _musicDriverName;
-		name += "]";
+		sendByte(0xB0 | cid);
+		sendByte((_reg[cid] << 1) | ((val >> 7) & 1));
+		sendByte(val & 0x7F);
 	}
-
-	return name;
 }
 
-Common::String MusicDevice::getCompleteId() {
-	Common::String id = _musicDriverId;
-	if (!_name.empty()) {
-		id += "_";
-		id += _name;
-	}
-
-	return id;
-}
-
-MidiDriver::DeviceHandle MusicDevice::getHandle() {
-	return (MidiDriver::DeviceHandle)Common::hashit(getCompleteId().c_str());
-}
+} // end of namespace Audio

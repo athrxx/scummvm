@@ -133,7 +133,7 @@ int8 PCSpeaker::generateTriangle(uint32 x, uint32 oscLength) {
 //	midi driver architecture. But we need the plugin for the options menu in the launcher
 //	and for MidiDriver::detectDevice() which is more or less used by all engines.)
 
-class PCSpeakerMusicPlugin : public NullMusicPlugin {
+class PCSpeakerAudioPlugin : public NullAudioPlugin {
 public:
 	const char *getName() const {
 		return _s("PC Speaker emulator");
@@ -146,13 +146,13 @@ public:
 	MusicDevices getDevices() const;
 };
 
-MusicDevices PCSpeakerMusicPlugin::getDevices() const {
+MusicDevices PCSpeakerAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	devices.push_back(MusicDevice(this, "", MT_PCSPK));
 	return devices;
 }
 
-class PCjrMusicPlugin : public NullMusicPlugin {
+class PCjrAudioPlugin : public NullAudioPlugin {
 public:
 	const char *getName() const {
 		return _s("IBM PCjr emulator");
@@ -165,20 +165,20 @@ public:
 	MusicDevices getDevices() const;
 };
 
-MusicDevices PCjrMusicPlugin::getDevices() const {
+MusicDevices PCjrAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	devices.push_back(MusicDevice(this, "", MT_PCJR));
 	return devices;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(PCSPK)
-	//REGISTER_PLUGIN_DYNAMIC(PCSPK, PLUGIN_TYPE_MUSIC, PCSpeakerMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(PCSPK, PLUGIN_TYPE_MUSIC, PCSpeakerAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(PCSPK, PLUGIN_TYPE_MUSIC, PCSpeakerMusicPlugin);
+	REGISTER_PLUGIN_STATIC(PCSPK, PLUGIN_TYPE_MUSIC, PCSpeakerAudioPlugin);
 //#endif
 
 //#if PLUGIN_ENABLED_DYNAMIC(PCJR)
-	//REGISTER_PLUGIN_DYNAMIC(PCJR, PLUGIN_TYPE_MUSIC, PCjrMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(PCJR, PLUGIN_TYPE_MUSIC, PCjrAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(PCJR, PLUGIN_TYPE_MUSIC, PCjrMusicPlugin);
+	REGISTER_PLUGIN_STATIC(PCJR, PLUGIN_TYPE_MUSIC, PCjrAudioPlugin);
 //#endif

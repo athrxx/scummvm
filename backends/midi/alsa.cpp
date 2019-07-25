@@ -325,7 +325,7 @@ int AlsaDevice::getClient() {
 	return _client;
 }
 
-class AlsaMusicPlugin : public MusicPluginObject {
+class AlsaAudioPlugin : public AudioPluginObject {
 public:
 	const char *getName() const {
 		return "ALSA";
@@ -343,7 +343,7 @@ private:
 	static int parse_addr(const char *arg, int *client, int *port);
 };
 
-AlsaDevices AlsaMusicPlugin::getAlsaDevices() const {
+AlsaDevices AlsaAudioPlugin::getAlsaDevices() const {
 	AlsaDevices devices;
 	snd_seq_t *seq_handle;
 	if (my_snd_seq_open(&seq_handle) < 0)
@@ -377,7 +377,7 @@ AlsaDevices AlsaMusicPlugin::getAlsaDevices() const {
 	return devices;
 }
 
-MusicDevices AlsaMusicPlugin::getDevices() const {
+MusicDevices AlsaAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	AlsaDevices::iterator d;
 
@@ -418,7 +418,7 @@ MusicDevices AlsaMusicPlugin::getDevices() const {
 	return devices;
 }
 
-Common::Error AlsaMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle dev) const {
+Common::Error AlsaAudioPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle dev) const {
 	bool found = false;
 	int seq_client, seq_port;
 
@@ -428,7 +428,7 @@ Common::Error AlsaMusicPlugin::createInstance(MidiDriver **mididriver, MidiDrive
 	// right place to do that, though.
 
 	if (ConfMan.hasKey("alsa_port")) {
-		warning("AlsaMusicPlugin: Found old 'alsa_port' setting, which will be ignored");
+		warning("AlsaAudioPlugin: Found old 'alsa_port' setting, which will be ignored");
 	}
 
 	// The SCUMMVM_PORT environment variable can still be used to override
@@ -436,11 +436,11 @@ Common::Error AlsaMusicPlugin::createInstance(MidiDriver **mididriver, MidiDrive
 
 	var = getenv("SCUMMVM_PORT");
 	if (var) {
-		warning("AlsaMusicPlugin: SCUMMVM_PORT environment variable overrides config settings");
+		warning("AlsaAudioPlugin: SCUMMVM_PORT environment variable overrides config settings");
 		if (parse_addr(var, &seq_client, &seq_port) >= 0) {
 			found = true;
 		} else {
-			warning("AlsaMusicPlugin: Invalid port %s, using config settings instead", var);
+			warning("AlsaAudioPlugin: Invalid port %s, using config settings instead", var);
 		}
 	}
 
@@ -467,7 +467,7 @@ Common::Error AlsaMusicPlugin::createInstance(MidiDriver **mididriver, MidiDrive
 		// TODO: What's a sensible default anyway? And exactly when do
 		// we get to this case?
 
-		warning("AlsaMusicPlugin: Using 17:0 as default ALSA port");
+		warning("AlsaAudioPlugin: Using 17:0 as default ALSA port");
 		seq_client = 17;
 		seq_port = 0;
 	}
@@ -477,7 +477,7 @@ Common::Error AlsaMusicPlugin::createInstance(MidiDriver **mididriver, MidiDrive
 	return Common::kNoError;
 }
 
-int AlsaMusicPlugin::parse_addr(const char *arg, int *client, int *port) {
+int AlsaAudioPlugin::parse_addr(const char *arg, int *client, int *port) {
 	const char *p;
 
 	if (isdigit(*arg)) {
@@ -496,9 +496,9 @@ int AlsaMusicPlugin::parse_addr(const char *arg, int *client, int *port) {
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(ALSA)
-	//REGISTER_PLUGIN_DYNAMIC(ALSA, PLUGIN_TYPE_MUSIC, AlsaMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(ALSA, PLUGIN_TYPE_MUSIC, AlsaAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(ALSA, PLUGIN_TYPE_MUSIC, AlsaMusicPlugin);
+	REGISTER_PLUGIN_STATIC(ALSA, PLUGIN_TYPE_MUSIC, AlsaAudioPlugin);
 //#endif
 
 #endif

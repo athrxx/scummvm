@@ -157,7 +157,7 @@ void MidiDriver_WIN::check_error(MMRESULT result) {
 
 // Plugin interface
 
-class WindowsMusicPlugin : public MusicPluginObject {
+class WindowsAudioPlugin : public AudioPluginObject {
 public:
 	const char *getName() const {
 		return _s("Windows MIDI");
@@ -171,7 +171,7 @@ public:
 	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle = 0) const;
 };
 
-MusicDevices WindowsMusicPlugin::getDevices() const {
+MusicDevices WindowsAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	int numDevs = midiOutGetNumDevs();
 	MIDIOUTCAPS tmp;
@@ -225,7 +225,7 @@ MusicDevices WindowsMusicPlugin::getDevices() const {
 	return devices;
 }
 
-Common::Error WindowsMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle dev) const {
+Common::Error WindowsAudioPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle dev) const {
 	int devIndex = 0;
 	bool found = false;
 
@@ -245,9 +245,9 @@ Common::Error WindowsMusicPlugin::createInstance(MidiDriver **mididriver, MidiDr
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(WINDOWS)
-	//REGISTER_PLUGIN_DYNAMIC(WINDOWS, PLUGIN_TYPE_MUSIC, WindowsMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(WINDOWS, PLUGIN_TYPE_MUSIC, WindowsAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(WINDOWS, PLUGIN_TYPE_MUSIC, WindowsMusicPlugin);
+	REGISTER_PLUGIN_STATIC(WINDOWS, PLUGIN_TYPE_MUSIC, WindowsAudioPlugin);
 //#endif
 
 #endif

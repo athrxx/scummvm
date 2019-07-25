@@ -23,19 +23,19 @@
 #include "common/error.h"
 #include "audio/null.h"
 
-Common::Error NullMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
+Common::Error NullAudioPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
 	*mididriver = new MidiDriver_NULL();
 
 	return Common::kNoError;
 }
 
-MusicDevices NullMusicPlugin::getDevices() const {
+MusicDevices NullAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	devices.push_back(MusicDevice(this, "", MT_NULL));
 	return devices;
 }
 
-class AutoMusicPlugin : public NullMusicPlugin {
+class AutoAudioPlugin : public NullAudioPlugin {
 public:
 	const char *getName() const {
 		return _s("<default>");
@@ -47,15 +47,15 @@ public:
 	MusicDevices getDevices() const;
 };
 
-MusicDevices AutoMusicPlugin::getDevices() const {
+MusicDevices AutoAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	devices.push_back(MusicDevice(this, "", MT_AUTO));
 	return devices;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(NULL)
-	//REGISTER_PLUGIN_DYNAMIC(NULL, PLUGIN_TYPE_MUSIC, NullMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(NULL, PLUGIN_TYPE_MUSIC, NullAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(AUTO, PLUGIN_TYPE_MUSIC, AutoMusicPlugin);
-	REGISTER_PLUGIN_STATIC(NULL, PLUGIN_TYPE_MUSIC, NullMusicPlugin);
+	REGISTER_PLUGIN_STATIC(AUTO, PLUGIN_TYPE_MUSIC, AutoAudioPlugin);
+	REGISTER_PLUGIN_STATIC(NULL, PLUGIN_TYPE_MUSIC, NullAudioPlugin);
 //#endif

@@ -24,28 +24,24 @@
 #define PC98_AUDIO_H
 
 #include "common/scummsys.h"
+#include "audio/device/porthandler.h"
 
 namespace Audio {
 class Mixer;
 }
 
 class PC98AudioCoreInternal;
-class PC98AudioPluginDriver {
+
+class PC98AudioCore : public Audio::PortHandler {
 public:
 	enum EmuType {
-		kTypeTowns,
-		kType26,
-		kType86
+		kTypeFMTowns	= 0,
+		kType980126		= 1,
+		kType980186		= 2
 	};
 
-	virtual ~PC98AudioPluginDriver() {}
-	virtual void timerCallbackA() {}
-	virtual void timerCallbackB() {}
-};
-
-class PC98AudioCore {
 public:
-	PC98AudioCore(Audio::Mixer *mixer, PC98AudioPluginDriver *driver, PC98AudioPluginDriver::EmuType type);
+	PC98AudioCore(Audio::Mixer *mixer, Audio::TimerCallbackReceiver *driver, EmuType type);
 	~PC98AudioCore();
 
 	bool init();
@@ -66,19 +62,17 @@ public:
 
 	void ssgSetVolume(int volume);
 
-	class MutexLock {
-		friend class PC98AudioCore;
-	public:
-		~MutexLock();
-	private:
-		MutexLock(PC98AudioCoreInternal *pc98int);
-		PC98AudioCoreInternal *_pc98int;
-	};
-
-	MutexLock stackLockMutex();
+	// PortHandler interface
+	uint8 p_read(uint32 addr) { return readPort(addr & 0xFFFF); }
+	void p_write(uint32 addr, uint8 val) { writePort(addr & 0xFFFF, val); }
+	int p_setCbReceiver(Audio::TimerCallbackReceiver *cb);
+	int p_setMusicVolume(int vol);
+	int p_setSfxVolume(int vol);
+	int p_property(int prop, int value);
 
 private:
 	PC98AudioCoreInternal *_internal;
+	int _ssgVolume;
 };
 
 #endif

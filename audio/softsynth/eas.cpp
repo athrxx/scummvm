@@ -435,10 +435,10 @@ bool MidiDriver_EAS::endOfData() const {
 	return false;
 }
 
-class EASMusicPlugin : public MusicPluginObject {
+class EASAudioPlugin : public AudioPluginObject {
 public:
-	EASMusicPlugin();
-	virtual ~EASMusicPlugin();
+	EASAudioPlugin();
+	virtual ~EASAudioPlugin();
 
 	const char *getName() const;
 	const char *getId() const;
@@ -447,37 +447,37 @@ public:
 									MidiDriver::DeviceHandle = 0) const;
 };
 
-EASMusicPlugin::EASMusicPlugin() {
+EASAudioPlugin::EASAudioPlugin() {
 }
 
-EASMusicPlugin::~EASMusicPlugin() {
+EASAudioPlugin::~EASAudioPlugin() {
 }
 
-const char *EASMusicPlugin::getName() const {
+const char *EASAudioPlugin::getName() const {
 	return "Embedded Audio Synthesis";
 }
 
-const char *EASMusicPlugin::getId() const {
+const char *EASAudioPlugin::getId() const {
 	return "eas";
 }
 
-MusicDevices EASMusicPlugin::getDevices() const {
+MusicDevices EASAudioPlugin::getDevices() const {
 	MusicDevices devices;
 	devices.push_back(MusicDevice(this, "", MT_GM));
 
 	return devices;
 }
 
-Common::Error EASMusicPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
+Common::Error EASAudioPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle) const {
 	*mididriver = new MidiDriver_EAS();
 
 	return Common::kNoError;
 }
 
 //#if PLUGIN_ENABLED_DYNAMIC(EAS)
-	//REGISTER_PLUGIN_DYNAMIC(EAS, PLUGIN_TYPE_MUSIC, EASMusicPlugin);
+	//REGISTER_PLUGIN_DYNAMIC(EAS, PLUGIN_TYPE_MUSIC, EASAudioPlugin);
 //#else
-	REGISTER_PLUGIN_STATIC(EAS, PLUGIN_TYPE_MUSIC, EASMusicPlugin);
+	REGISTER_PLUGIN_STATIC(EAS, PLUGIN_TYPE_MUSIC, EASAudioPlugin);
 //#endif
 
 #endif

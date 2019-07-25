@@ -26,11 +26,11 @@
 
 class PC98AudioCoreInternal : public TownsPC98_FmSynth {
 private:
-	PC98AudioCoreInternal(Audio::Mixer *mixer, PC98AudioCore *owner, PC98AudioPluginDriver *driver, PC98AudioPluginDriver::EmuType type);
+	PC98AudioCoreInternal(Audio::Mixer *mixer, PC98AudioCore *owner, Audio::TimerCallbackReceiver *driver, EmuType type);
 public:
 	~PC98AudioCoreInternal();
 
-	static PC98AudioCoreInternal *addNewRef(Audio::Mixer *mixer, PC98AudioCore *owner, PC98AudioPluginDriver *driver, PC98AudioPluginDriver::EmuType type);
+	static PC98AudioCoreInternal *addNewRef(Audio::Mixer *mixer, PC98AudioCore *owner, Audio::TimerCallbackReceiver *driver, EmuType type);
 	static void releaseRef(PC98AudioCore *owner);
 
 	bool init();
@@ -48,10 +48,10 @@ public:
 
 	Common::Mutex &mutex();
 
-private:
-	bool assignPluginDriver(PC98AudioCore *owner, PC98AudioPluginDriver *driver, bool externalMutexHandling = false);
+	bool assignPluginDriver(PC98AudioCore *owner, Audio::TimerCallbackReceiver *driver);
 	void removePluginDriver(PC98AudioCore *owner);
 
+private:
 	void timerCallbackA();
 	void timerCallbackB();
 
@@ -61,7 +61,7 @@ private:
 	const uint16 _port1, _port2, _port3, _port4;
 	uint8 _address[2];
 
-	PC98AudioPluginDriver *_drv;
+	Audio::TimerCallbackReceiver *_drv;
 	void *_drvOwner;
 	bool _ready;
 
@@ -69,12 +69,12 @@ private:
 	static int _refCount;
 };
 
-PC98AudioCoreInternal::PC98AudioCoreInternal(Audio::Mixer *mixer, PC98AudioCore *owner, PC98AudioPluginDriver *driver, PC98AudioPluginDriver::EmuType type) :
+PC98AudioCoreInternal::PC98AudioCoreInternal(Audio::Mixer *mixer, PC98AudioCore *owner, Audio::TimerCallbackReceiver *driver, EmuType type) :
 	TownsPC98_FmSynth(mixer, (TownsPC98_FmSynth::EmuType)type),
 	_drv(driver), _drvOwner(owner),
 	_musicVolume(Audio::Mixer::kMaxMixerVolume), _sfxVolume(Audio::Mixer::kMaxMixerVolume),
-	_port1(type == PC98AudioPluginDriver::kTypeTowns ? 0x4D8 : 0x188), _port2(type == PC98AudioPluginDriver::kTypeTowns ? 0x4DA : 0x18A),
-	_port3(type == PC98AudioPluginDriver::kTypeTowns ? 0x4DC : 0x18C), _port4(type == PC98AudioPluginDriver::kTypeTowns ? 0x4DE : 0x18E),
+	_port1(type == kTypeFMTowns ? 0x4D8 : 0x188), _port2(type == kTypeFMTowns ? 0x4DA : 0x18A),
+	_port3(type == kTypeFMTowns ? 0x4DC : 0x18C), _port4(type == kTypeFMTowns ? 0x4DE : 0x18E),
 	_ready(false) {
 		_address[0] = _address[1] = 0xFF;
 }
@@ -89,7 +89,7 @@ PC98AudioCoreInternal::~PC98AudioCoreInternal() {
 	*/
 }
 
-PC98AudioCoreInternal *PC98AudioCoreInternal::addNewRef(Audio::Mixer *mixer, PC98AudioCore *owner, PC98AudioPluginDriver *driver, PC98AudioPluginDriver::EmuType type) {
+PC98AudioCoreInternal *PC98AudioCoreInternal::addNewRef(Audio::Mixer *mixer, PC98AudioCore *owner, Audio::TimerCallbackReceiver *driver, EmuType type) {
 	_refCount++;
 	if (_refCount == 1 && _refInstance == 0)
 		_refInstance = new PC98AudioCoreInternal(mixer, owner, driver, type);
@@ -192,10 +192,10 @@ Common::Mutex &PC98AudioCoreInternal::mutex() {
 	return _mutex;
 }
 
-bool PC98AudioCoreInternal::assignPluginDriver(PC98AudioCore *owner, PC98AudioPluginDriver *driver, bool externalMutexHandling) {
+bool PC98AudioCoreInternal::assignPluginDriver(PC98AudioCore *owner, Audio::TimerCallbackReceiver *driver) {
 	Common::StackLock lock(_mutex);
-	if (_refCount <= 1)
-		return true;
+	//if (_refCount <= 1)
+	//	return true;
 
 	if (_drv) {
 		if (driver && driver != _drv)
@@ -217,21 +217,21 @@ void PC98AudioCoreInternal::removePluginDriver(PC98AudioCore *owner) {
 void PC98AudioCoreInternal::timerCallbackA() {
 	Common::StackLock lock(_mutex);
 	if (_drv && _ready)
-		_drv->timerCallbackA();
+		_drv->timerCallback(0);
 }
 
 void PC98AudioCoreInternal::timerCallbackB() {
 	Common::StackLock lock(_mutex);
 	if (_drv && _ready)
-		_drv->timerCallbackB();
+		_drv->timerCallback(1);
 }
 
 PC98AudioCoreInternal *PC98AudioCoreInternal::_refInstance = 0;
 
 int PC98AudioCoreInternal::_refCount = 0;
 
-PC98AudioCore::PC98AudioCore(Audio::Mixer *mixer, PC98AudioPluginDriver *driver, PC98AudioPluginDriver::EmuType type) {
-	_internal = PC98AudioCoreInternal::addNewRef(mixer, this, driver, type);
+PC98AudioCore::PC98AudioCore(Audio::Mixer *mixer, Audio::TimerCallbackReceiver *driver, EmuType type) : Audio::PortHandler(type == kType980186 ? SND_PC98_86 : SND_PC98_26), _ssgVolume(0x60) {
+	_internal = PC98AudioCoreInternal::addNewRef(mixer, this, driver, (TownsPC98_FmSynth::EmuType) type);
 }
 
 PC98AudioCore::~PC98AudioCore() {
@@ -279,16 +279,41 @@ void PC98AudioCore::ssgSetVolume(int volume) {
 	_internal->ssgSetVolume(volume);
 }
 
-PC98AudioCore::MutexLock PC98AudioCore::stackLockMutex() {
-	return MutexLock(_internal);
+int PC98AudioCore::p_setCbReceiver(Audio::TimerCallbackReceiver *cb) {
+	int res = 0;
+	if (cb)
+		res = _internal->assignPluginDriver(this, cb) ? 0 : 2;
+	else
+		_internal->removePluginDriver(this);
+	return 0;
 }
 
-PC98AudioCore::MutexLock::MutexLock(PC98AudioCoreInternal *pc98int) : _pc98int(pc98int) {
-	if (_pc98int)
-		_pc98int->mutex().lock();
+int PC98AudioCore::p_setMusicVolume(int vol) {
+	setMusicVolume(vol);
+	return 0;
 }
 
-PC98AudioCore::MutexLock::~MutexLock() {
-	if (_pc98int)
-		_pc98int->mutex().unlock();
+int PC98AudioCore::p_setSfxVolume(int vol) {
+	setSoundEffectVolume(vol);
+	return 0;
 }
+
+int PC98AudioCore::p_property(int prop, int value) {
+	int res = 0;
+
+	switch (prop) {
+	case Audio::Port::kPROP_VOLUMECHANNELMASK:
+		setSoundEffectChanMask(value);
+		break;
+	case Audio::Port::kPROP_SSGVOLUME:
+		if (value != -1)
+			ssgSetVolume(value);
+		res = _ssgVolume;
+		break;
+	default:
+		break;
+	}
+
+	return res;
+}
+
