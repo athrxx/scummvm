@@ -80,7 +80,7 @@ protected:
 	const bool _v2;
 };
 
-class Player_Towns_v1 : public Player_Towns {
+class Player_Towns_v1 : public Player_Towns, public TownsAudioInterfacePluginDriver {
 public:
 	Player_Towns_v1(ScummEngine *vm, Audio::Mixer *mixer);
 	~Player_Towns_v1() override;
@@ -102,8 +102,12 @@ public:
 	void setSoundVolume(int sound, int left, int right) override;
 	void setSoundNote(int sound, int note) override;
 
+	int getMusicTimer();
+
 	void saveLoadWithSerializer(Common::Serializer &ser) override;
 	void restoreAfterLoad() override;
+
+	virtual void timerCallback(int timerId);
 
 private:
 	void restartLoopingSounds();
@@ -135,6 +139,9 @@ private:
 
 	uint8 _cdaCurrentSoundTemp;
 	uint8 _cdaNumLoopsTemp;
+
+	uint _cbCounter;
+	uint8 _cbCounterInt;
 
 	EuphonyPlayer *_player;
 };

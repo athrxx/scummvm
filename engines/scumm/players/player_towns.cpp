@@ -187,7 +187,7 @@ int Player_Towns::allocatePcmChannel(int sound, int sfxChanRelIndex, uint32 prio
 	return chan;
 }
 
-Player_Towns_v1::Player_Towns_v1(ScummEngine *vm, Audio::Mixer *mixer) : Player_Towns(vm, false) {
+Player_Towns_v1::Player_Towns_v1(ScummEngine *vm, Audio::Mixer *mixer) : Player_Towns(vm, false), TownsAudioInterfacePluginDriver() {
 	_soundOverride = 0;
 	_cdaCurrentSound = _eupCurrentSound = _cdaNumLoops = 0;
 	_cdaForceRestart = 0;
@@ -201,8 +201,11 @@ Player_Towns_v1::Player_Towns_v1(ScummEngine *vm, Audio::Mixer *mixer) : Player_
 		memset(_soundOverride, 0, _numSoundMax * sizeof(SoundOvrParameters));
 	}
 
+	_cbCounterInt = 0;
+	_cbCounter = 0;
+
 	_player = new EuphonyPlayer(mixer);
-	_intf = new TownsAudioInterface(mixer, 0);
+	_intf = new TownsAudioInterface(mixer, this, true);
 }
 
 Player_Towns_v1::~Player_Towns_v1() {
@@ -366,6 +369,10 @@ void Player_Towns_v1::setSoundNote(int sound, int note) {
 		_soundOverride[sound].note = note;
 }
 
+int Player_Towns_v1::getMusicTimer() {
+	return _cbCounter;
+}
+
 void Player_Towns_v1::saveLoadWithSerializer(Common::Serializer &s) {
 	_cdaCurrentSoundTemp = (_vm->_sound->pollCD() && _cdaNumLoops > 1) ? _cdaCurrentSound & 0xff : 0;
 	_cdaNumLoopsTemp = _cdaNumLoops & 0xff;
@@ -415,6 +422,15 @@ void Player_Towns_v1::restoreAfterLoad() {
 	}
 
 	Player_Towns::restoreAfterLoad();
+}
+
+void Player_Towns_v1::timerCallback(int timerId) {
+	if (timerId == 1) {
+		if (++_cbCounterInt == 15) {
+			_cbCounterInt = 0;
+			_cbCounter++;
+		}
+	}
 }
 
 void Player_Towns_v1::restartLoopingSounds() {

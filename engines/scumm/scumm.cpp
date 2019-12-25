@@ -2289,6 +2289,7 @@ void ScummEngine::scummLoop(int delta) {
 
 	if (_game.features & GF_AUDIOTRACKS) {
 		// Covered automatically by the Sound class
+		VAR(VAR_MUSIC_TIMER) = _musicEngine->getMusicTimer();
 	} else if (VAR_MUSIC_TIMER != 0xFF) {
 		if (_musicEngine) {
 			// The music engine generates the timer data for us.
