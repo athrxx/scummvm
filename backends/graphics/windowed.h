@@ -86,6 +86,17 @@ public:
 		}
 	}
 
+	virtual void setShakeView(Common::Rect view) override {
+		_shakeView = view;
+		recalculateDisplayAreas();
+		_cursorNeedsRedraw = true;
+	}
+
+	virtual void removeShakeView() override {
+		_shakeView.bottom = 0;
+		recalculateDisplayAreas();
+		_cursorNeedsRedraw = true;
+	}
 protected:
 	/**
 	 * @returns whether or not the game screen must have aspect ratio correction
@@ -193,11 +204,11 @@ protected:
 			return;
 		}
 
-		populateDisplayAreaDrawRect(getDesiredGameAspectRatio(), getWidth() * getGameRenderScale(), _gameDrawRect);
+		populateDisplayAreaDrawRect(getDesiredGameAspectRatio(), getWidth() * getGameRenderScale(), _gameDrawRect, _shakeView.bottom == 0);
 
 		if (getOverlayHeight()) {
 			const frac_t overlayAspect = intToFrac(getOverlayWidth()) / getOverlayHeight();
-			populateDisplayAreaDrawRect(overlayAspect, getOverlayWidth(), _overlayDrawRect);
+			populateDisplayAreaDrawRect(overlayAspect, getOverlayWidth(), _overlayDrawRect, _shakeView.bottom == 0);
 		}
 
 		if (_overlayVisible) {
@@ -208,6 +219,13 @@ protected:
 			_activeArea.drawRect = _gameDrawRect;
 			_activeArea.width = getWidth();
 			_activeArea.height = getHeight();
+		}
+
+		if (_shakeView.bottom) {
+			_shakeViewScaled.left = _activeArea.drawRect.left + (_shakeView.left + _gameScreenShakeXOffset) * _activeArea.drawRect.width() / _activeArea.width;
+			_shakeViewScaled.top = _activeArea.drawRect.top + (_shakeView.top + _gameScreenShakeYOffset) * _activeArea.drawRect.height() / _activeArea.height;
+			_shakeViewScaled.right = _activeArea.drawRect.left + (_shakeView.right + _gameScreenShakeXOffset) * _activeArea.drawRect.width() / _activeArea.width;
+			_shakeViewScaled.bottom = _activeArea.drawRect.top + (_shakeView.bottom + _gameScreenShakeYOffset) * _activeArea.drawRect.height() / _activeArea.height;
 		}
 	}
 
@@ -303,6 +321,16 @@ protected:
 	int _gameScreenShakeYOffset;
 
 	/**
+	 * The rectangle set via setUpdateView(), original resolution non-scaled.
+	 */
+	Common::Rect _shakeView;
+
+	/**
+	 * The rectangle set via setUpdateView(), scaled to the window.
+	 */
+	Common::Rect _shakeViewScaled;
+
+	/**
 	 * The scaled draw rectangle for the game surface within the window.
 	 */
 	Common::Rect _gameDrawRect;
@@ -367,7 +395,7 @@ protected:
 	int _cursorX, _cursorY;
 
 private:
-	void populateDisplayAreaDrawRect(const frac_t displayAspect, int originalWidth, Common::Rect &drawRect) const {
+	void populateDisplayAreaDrawRect(const frac_t displayAspect, int originalWidth, Common::Rect &drawRect, bool addShakeOffsets) const {
 		int mode = getStretchMode();
 		// Mode Center   = use original size, or divide by an integral amount if window is smaller than game surface
 		// Mode Integral = scale by an integral amount.
@@ -405,9 +433,13 @@ private:
 					width = fracToInt(height * displayAspect);
 			}
 		}
-		
-		drawRect.left = ((_windowWidth - width) / 2) + _gameScreenShakeXOffset * width / getWidth();
-		drawRect.top = ((_windowHeight - height) / 2) + _gameScreenShakeYOffset * height / getHeight();
+
+		drawRect.left = ((_windowWidth - width) / 2);
+		drawRect.top = ((_windowHeight - height) / 2);
+		if (addShakeOffsets) {
+			drawRect.left += _gameScreenShakeXOffset * width / getWidth();
+			drawRect.top += _gameScreenShakeYOffset * height / getHeight();
+		}
 		drawRect.setWidth(width);
 		drawRect.setHeight(height);
 	}

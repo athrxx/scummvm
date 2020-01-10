@@ -85,6 +85,8 @@ public:
 	virtual void fillScreen(uint32 col) = 0;
 	virtual void updateScreen() = 0;
 	virtual void setShakePos(int shakeXOffset, int shakeYOffset) = 0;
+	virtual void setShakeView(Common::Rect view) = 0;
+	virtual void removeShakeView() = 0;
 	virtual void setFocusRectangle(const Common::Rect& rect) = 0;
 	virtual void clearFocusRectangle() = 0;
 

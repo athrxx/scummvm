@@ -64,7 +64,8 @@ OpenGLGraphicsManager::OpenGLGraphicsManager()
       _cursor(nullptr),
       _cursorHotspotX(0), _cursorHotspotY(0),
       _cursorHotspotXScaled(0), _cursorHotspotYScaled(0), _cursorWidthScaled(0), _cursorHeightScaled(0),
-      _cursorKeyColor(0), _cursorDontScale(false), _cursorPaletteEnabled(false)
+      _cursorKeyColor(0), _cursorDontScale(false), _cursorPaletteEnabled(false),
+	  _scaledShakeOffsX(0), _scaledShakeOffsY(0), _reverseDrawRectTop(0), _reverseScaledShakeViewTop(0)
 #ifdef USE_OSD
       , _osdMessageChangeRequest(false), _osdMessageAlpha(0), _osdMessageFadeStartTime(0), _osdMessageSurface(nullptr),
       _osdIconSurface(nullptr)
@@ -513,14 +514,48 @@ void OpenGLGraphicsManager::updateScreen() {
 		g_context.getActivePipeline()->drawTexture(_overlay->getGLTexture(), 0, 0, _overlayDrawRect.width(), _overlayDrawRect.height());
 	}
 
-	// Third step: Draw the cursor if visible.
-	if (_cursorVisible && _cursor) {
-		_backBuffer.enableBlend(Framebuffer::kBlendModePremultipliedTransparency);
+	// Third step: Draw the shake window if applicable
+	if (_shakeView.bottom) {
+		_backBuffer.enableBlend(Framebuffer::kBlendModeDisabled);
+		g_context.glViewport(_scaledShakeOffsX, -_scaledShakeOffsY, _windowWidth, _windowHeight);
 
+		// Enable ScissorTest if that has not yet happened, setup the rectangle for the shake window and draw the gamescreen texture
+		if (_overlayVisible)
+			_backBuffer.enableScissorTest(true);
+		_backBuffer.setScissorBox(_shakeViewScaled.left, _reverseScaledShakeViewTop, _shakeViewScaled.width(), _shakeViewScaled.height());
+		g_context.getActivePipeline()->drawTexture(_gameScreen->getGLTexture(), _gameDrawRect.left, _gameDrawRect.top, _gameDrawRect.width(), _gameDrawRect.height());
+
+		// Draw the overlay for the shake window if applicable
+		if (_overlayVisible) {
+			_backBuffer.enableBlend(Framebuffer::kBlendModeTraditionalTransparency);
+			g_context.getActivePipeline()->drawTexture(_overlay->getGLTexture(), 0, 0, _overlayDrawRect.width(), _overlayDrawRect.height());
+		}
+
+		// Restore ScissorTest settings
+		if (_overlayVisible)
+			_backBuffer.enableScissorTest(false);
+		else
+			_backBuffer.setScissorBox(_gameDrawRect.left, _reverseDrawRectTop, _gameDrawRect.width(), _gameDrawRect.height());
+
+		g_context.glViewport(0, 0, _windowWidth, _windowHeight);
+	}
+
+	// Fourth step: Draw the cursor if visible.
+	if (_cursorVisible && _cursor) {
+		int cursorDrawX = _cursorX - _cursorHotspotXScaled;
+		int cursorDrawY = _cursorY - _cursorHotspotYScaled;
+
+		// Shake cursor if it is located in the shake window or if there is no shake window set (fullscreen shake)
+		if (!_shakeView.bottom || (_cursorX >= _shakeViewScaled.left && _cursorX < _shakeViewScaled.right && _cursorY >= _shakeViewScaled.top && _cursorY < _shakeViewScaled.bottom)) {
+			cursorDrawX += _scaledShakeOffsX;
+			cursorDrawY += _scaledShakeOffsY;
+		}
+
+		_backBuffer.enableBlend(Framebuffer::kBlendModePremultipliedTransparency);
 		g_context.getActivePipeline()->drawTexture(_cursor->getGLTexture(),
-		                         _cursorX - _cursorHotspotXScaled,
-		                         _cursorY - _cursorHotspotYScaled,
-		                         _cursorWidthScaled, _cursorHeightScaled);
+			cursorDrawX,
+			cursorDrawY,
+			_cursorWidthScaled, _cursorHeightScaled);
 	}
 
 	if (!_overlayVisible) {
@@ -528,7 +563,7 @@ void OpenGLGraphicsManager::updateScreen() {
 	}
 
 #ifdef USE_OSD
-	// Fourth step: Draw the OSD.
+	// Fifth step: Draw the OSD.
 	if (_osdMessageSurface || _osdIconSurface) {
 		_backBuffer.enableBlend(Framebuffer::kBlendModeTraditionalTransparency);
 	}
@@ -1227,10 +1262,15 @@ void OpenGLGraphicsManager::recalculateDisplayAreas() {
 	// Setup drawing limitation for game graphics.
 	// This involves some trickery because OpenGL's viewport coordinate system
 	// is upside down compared to ours.
+	_reverseDrawRectTop = _windowHeight - _gameDrawRect.height() - _gameDrawRect.top;
+	_reverseScaledShakeViewTop = _windowHeight - _shakeViewScaled.height() - _shakeViewScaled.top;
 	_backBuffer.setScissorBox(_gameDrawRect.left,
-	                          _windowHeight - _gameDrawRect.height() - _gameDrawRect.top,
+							  _reverseDrawRectTop,
 	                          _gameDrawRect.width(),
 	                          _gameDrawRect.height());
+
+	_scaledShakeOffsX = _gameScreenShakeXOffset * _activeArea.drawRect.width() / _activeArea.width;
+	_scaledShakeOffsY = _gameScreenShakeYOffset * _activeArea.drawRect.height() / _activeArea.height;
 
 	// Update the cursor position to adjust for new display area.
 	setMousePosition(_cursorX, _cursorY);

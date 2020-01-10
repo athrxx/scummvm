@@ -934,6 +934,22 @@ public:
 	virtual void setShakePos(int shakeXOffset, int shakeYOffset) = 0;
 
 	/**
+	 * Limits the area that actually gets drawn. The rest of the screen will get
+	 * no updates until the update view is removed.
+	 * @param view		Common::Rect object that describes the area that will get
+	 *					drawn.
+	 *
+	 * @note This is currently used by the SegaCD version of EOB I in connection
+	 * with setShakePos().
+	 */
+	virtual void setShakeView(Common::Rect view) = 0;
+
+	/**
+	 * Removes the view set via setUpdateView().
+	 */
+	virtual void removeShakeView() = 0;
+	
+	/**
 	 * Sets the area of the screen that has the focus.  For example, when a character
 	 * is speaking, they will have the focus.  Allows for pan-and-scan style views
 	 * where the backend could follow the speaking character or area of interest on

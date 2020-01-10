@@ -2279,9 +2279,13 @@ void SurfaceSdlGraphicsManager::drawMouse() {
 
 	// We draw the pre-scaled cursor image, so now we need to adjust for
 	// scaling, shake position and aspect ratio correction manually.
-
-	dst.x += _currentShakeXOffset;
-	dst.y += _currentShakeYOffset;
+	// The offsets must always be applied if no shake view is set, since
+	// the call to convertWindowToVirtual() counteracts the move of the
+	// view port.
+	if (!_shakeView.bottom) {
+		dst.x += _gameScreenShakeXOffset;
+		dst.y += _gameScreenShakeYOffset;
+	}
 
 	if (_videoMode.aspectRatioCorrection && !_overlayVisible)
 		dst.y = real2Aspect(dst.y);
@@ -2799,6 +2803,21 @@ void SurfaceSdlGraphicsManager::SDL_UpdateRects(SDL_Surface *screen, int numrect
 
 	SDL_RenderClear(_renderer);
 	SDL_RenderCopy(_renderer, _screenTexture, NULL, &viewport);
+
+	if (_shakeView.bottom) {
+		SDL_Rect shakeView;
+		int scaleFactor = _overlayVisible ? 1 : _videoMode.scaleFactor;
+		shakeView.x = _shakeView.left * scaleFactor;
+		shakeView.y = _shakeView.top * scaleFactor;
+		shakeView.w = _shakeView.width() * scaleFactor;
+		shakeView.h = _shakeView.height() * scaleFactor;
+		viewport.x = _shakeViewScaled.left;
+		viewport.y = _shakeViewScaled.top;
+		viewport.w = _shakeViewScaled.width();
+		viewport.h = _shakeViewScaled.height();
+		SDL_RenderCopy(_renderer, _screenTexture, &shakeView, &viewport);
+	}
+
 	SDL_RenderPresent(_renderer);
 }
 #endif // SDL_VERSION_ATLEAST(2, 0, 0)

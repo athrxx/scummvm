@@ -95,6 +95,8 @@ public:
 	virtual void fillScreen(uint32 col) override;
 	virtual void updateScreen() override;
 	virtual void setShakePos(int shakeXOffset, int shakeYOffset) override;
+	virtual void setShakeView(Common::Rect view) override;
+	virtual void removeShakeView() override;
 	virtual void setFocusRectangle(const Common::Rect& rect) override;
 	virtual void clearFocusRectangle() override;
 

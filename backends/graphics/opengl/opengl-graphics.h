@@ -235,6 +235,16 @@ private:
 	 */
 	int _stretchMode;
 
+	/**
+	 * Scaled variants of _gameScreenShakeXOffset, _gameScreenShakeYOffset
+	 */
+	int _scaledShakeOffsX, _scaledShakeOffsY;
+
+	/**
+	 * Upside down versions (for OpenGL purposes) of _gameDrawRect.top and _scaledShakeView.top
+	 */
+	int _reverseDrawRectTop, _reverseScaledShakeViewTop;
+
 protected:
 	/**
 	 * Set up the requested video mode. This takes parameters which describe
