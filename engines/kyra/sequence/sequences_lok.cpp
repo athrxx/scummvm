@@ -106,7 +106,7 @@ void KyraEngine_LoK::seq_intro() {
 
 	_seq->setCopyViewOffs(true);
 	_screen->setFont(_flags.lang == Common::JA_JPN ? Screen::FID_SJIS_FNT : Screen::FID_8_FNT);
-	if (_flags.platform != Common::kPlatformFMTowns && _flags.platform != Common::kPlatformPC98 && _flags.platform != Common::kPlatformAmiga)
+	if (_flags.platform == Common::kPlatformDOS)
 		snd_playTheme(0, 2);
 	_text->setTalkCoords(144);
 

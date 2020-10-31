@@ -42,6 +42,10 @@ class PCSpeaker;
 class MaxTrax;
 } // End of namespace Audio
 
+namespace Common {
+class MacResManager;
+} // End of namespace Common
+
 namespace Kyra {
 
 class MidiOutput;
@@ -512,6 +516,35 @@ private:
 	bool _ready;
 
 	static const uint8 _fmTrackMap[140];
+};
+
+class HalestormDriver;
+class SoundMac : public Sound {
+public:
+	SoundMac(KyraEngine_v1 *vm, Audio::Mixer *mixer);
+	~SoundMac() override;
+
+	kType getMusicType() const override;
+
+	bool init() override;
+	void initAudioResourceInfo(int, void*) override {}
+	void selectAudioResourceSet(int) override {}
+	bool hasSoundFile(uint file) const override;
+	void loadSoundFile(uint file) override;
+	void loadSoundFile(Common::String file) override {}
+	void playTrack(uint8 track) override;
+	void haltTrack() override;
+	void playSoundEffect(uint16 track, uint8 volume) override;
+	bool isPlaying() const override;
+	void beginFadeOut() override;
+	void updateVolumeSettings() override;
+
+private:
+	Common::MacResManager *_macRes;
+	KyraEngine_v1 *_vm;
+	HalestormDriver *_driver;
+
+	bool _ready;
 };
 
 #endif

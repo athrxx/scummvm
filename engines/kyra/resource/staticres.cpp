@@ -816,9 +816,7 @@ void KyraEngine_LoK::initStaticResource() {
 	const char *const *soundFilesIntro = _staticres->loadStrings(k1AudioTracksIntro, soundFilesIntroSize);
 	const int32 *cdaTable = (const int32 *)_staticres->loadRawData(k1TownsCDATable, cdaTableSize);
 
-	// FIXME: It seems Kyra1 MAC CD includes AdLib and MIDI music and sfx, thus we enable
-	// support for those for now. (Based on patch #2767489 "Support for Mac Kyrandia 1 CD" by satz).
-	if (_flags.platform == Common::kPlatformDOS || _flags.platform == Common::kPlatformMacintosh) {
+	if (_flags.platform == Common::kPlatformDOS) {
 		SoundResourceInfo_PC resInfoIntro(soundFilesIntro, soundFilesIntroSize);
 		SoundResourceInfo_PC resInfoIngame(soundFiles, soundFilesSize);
 		_sound->initAudioResourceInfo(kMusicIntro, &resInfoIntro);
@@ -1287,6 +1285,18 @@ const int8 KyraEngine_LoK::_amigaTrackMap[] = {
 };
 
 const int KyraEngine_LoK::_amigaTrackMapSize = ARRAYSIZE(KyraEngine_LoK::_amigaTrackMap);
+
+const int8 KyraEngine_LoK::_macTrackMap[] = {
+	 0,  1, 39, 26, 31, 30, 33, 33,
+	34, 17, 27, 42, 37, 29, 25, 24,
+	23, 40, 38, 35, 28, 21, 41, 15,
+	 3, 15, 43, 25, 33, 21, 30, 22,
+	15,  3, 33, 11, 12, 13, 14, 36,
+	36, 36,  3,  3, 44,  3,  3, 45,
+	 3,  3,  3,  3,  3,  3, 33,  0
+};
+
+const int KyraEngine_LoK::_macTrackMapSize = ARRAYSIZE(KyraEngine_LoK::_macTrackMap);
 
 // kyra engine v2 static data
 
