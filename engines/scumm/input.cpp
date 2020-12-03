@@ -559,8 +559,10 @@ void ScummEngine::processKeyboard(Common::KeyState lastKeyHit) {
 
 	} else if (talkstopKeyEnabled && lastKeyHit.ascii == '.') {
 		_talkDelay = 0;
-		if (_sound->_sfxMode & 2)
-			stopTalk();
+		if (_sound->_sfxMode & 2) {
+			if (_haveMsg != 0xFF)
+				stopTalk();
+		}
 
 	} else if (cutsceneExitKeyEnabled && (lastKeyHit.keycode == Common::KEYCODE_ESCAPE && lastKeyHit.hasFlags(0))) {
 		abortCutscene();
