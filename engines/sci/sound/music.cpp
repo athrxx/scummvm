@@ -306,22 +306,12 @@ MusicEntry *SciMusic::getSlot(reg_t obj) {
 	return NULL;
 }
 
-// We return the currently active music slot for SCI0
-MusicEntry *SciMusic::getActiveSci0MusicSlot() {
-	const MusicList::iterator end = _playList.end();
-	MusicEntry *highestPrioritySlot = NULL;
-	for (MusicList::iterator i = _playList.begin(); i != end; ++i) {
-		MusicEntry *playSlot = *i;
-		if (playSlot->pMidiParser) {
-			if (playSlot->status == kSoundPlaying)
-				return playSlot;
-			if (playSlot->status == kSoundPaused) {
-				if ((!highestPrioritySlot) || (highestPrioritySlot->priority < playSlot->priority))
-					highestPrioritySlot = playSlot;
-			}
-		}
+MusicEntry *SciMusic::getFirstSlotWithStatus(SoundStatus status) {
+	for (MusicList::iterator i = _playList.begin(); i != _playList.end(); ++i) {
+		if ((*i)->status == status)
+			return *i;
 	}
-	return highestPrioritySlot;
+	return 0;
 }
 
 void SciMusic::setGlobalReverb(int8 reverb) {
@@ -539,12 +529,10 @@ void SciMusic::soundPlay(MusicEntry *pSnd, bool restoring) {
 				// And new priority higher? pause previous music and play new one immediately.
 				// Example of such case: lsl3, when getting points (jingle is played then)
 				soundPause(alreadyPlaying);
-				alreadyPlaying->isQueued = true;
 			} else {
 				// And new priority equal or lower? queue up music and play it afterwards done by
 				//  SoundCommandParser::updateSci0Cues()
 				// Example of such case: iceman room 14
-				pSnd->isQueued = true;
 				pSnd->status = kSoundPaused;
 				return;
 			}
@@ -645,8 +633,7 @@ void SciMusic::soundPlay(MusicEntry *pSnd, bool restoring) {
 void SciMusic::soundStop(MusicEntry *pSnd) {
 	SoundStatus previousStatus = pSnd->status;
 	pSnd->status = kSoundStopped;
-	if (_soundVersion <= SCI_VERSION_0_LATE)
-		pSnd->isQueued = false;
+
 	if (pSnd->isSample) {
 #ifdef ENABLE_SCI32
 		if (_soundVersion >= SCI_VERSION_2) {
@@ -673,6 +660,10 @@ void SciMusic::soundStop(MusicEntry *pSnd) {
 	}
 
 	pSnd->fadeStep = 0; // end fading, if fading was in progress
+
+	// SSCI0 resumes the next available sound from the (priority ordered) list with a paused status.
+	if (_soundVersion <= SCI_VERSION_0_LATE && (pSnd = getFirstSlotWithStatus(kSoundPaused)))
+		soundResume(pSnd);
 }
 
 void SciMusic::soundSetVolume(MusicEntry *pSnd, byte volume) {
@@ -922,8 +913,6 @@ MusicEntry::MusicEntry() {
 	soundRes = 0;
 	resourceId = 0;
 
-	isQueued = false;
-
 	dataInc = 0;
 	ticker = 0;
 	signal = 0;
@@ -974,7 +963,7 @@ void MusicEntry::onTimer() {
 		}
 	}
 
-	if (status != kSoundPlaying)
+	if (status != kSoundPlaying || !loop)
 		return;
 
 	// Fade MIDI and digital sound effects
