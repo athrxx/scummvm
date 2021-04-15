@@ -19,37 +19,31 @@
 *
 */
 
-#ifndef SNATCHER_RENDER_H
-#define SNATCHER_RENDER_H
-
-#include "common/platform.h"
+#include "snatcher/resource.h"
+#include "snatcher/scene_imp.h"
 
 namespace Snatcher {
 
-class Renderer {
-public:
-	virtual ~Renderer() {}
+#define SCImp Scene_D1
 
-	virtual uint16 screenWidth() const = 0;
-	virtual uint16 screenHeight() const = 0;
-protected:
-	Renderer() {}
+SH_HEAD_BEGIN(D1)
+// declarations
+SH_HEAD_END(D1)
 
-private:
-	static Renderer *createSegaRenderer();
+SH_IMP_CTOR(D1) {
 
-public:
-	static Renderer *create(Common::Platform platform) {
-		switch (platform) {
-		case Common::kPlatformSegaCD:
-			return createSegaRenderer();
-		default:
-			break;
-		};
-		return 0;
-	}
-};
+}
+
+SCImp::~SCImp() {
+
+}
+
+void SCImp::operator()() {
+
+}
+
+// functions
+
+#undef SCImp
 
 } // End of namespace Snatcher
-
-#endif // SNATCHER_RENDER_H
