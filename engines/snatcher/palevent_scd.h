@@ -19,34 +19,28 @@
 *
 */
 
-namespace {
+#ifndef SNATCHER_PALEVENT_SCD_H
+#define SNATCHER_PALEVENT_SCD_H
 
-#define FLAGS(id, a, b) { id, a, Common::UNK_LANG, Common::kPlatformUnknown, b, Common::UNK_LANG, Common::UNK_LANG }
-#define FLAGS_FAN(id, a, b, fanLang, repLang) { id, a, Common::UNK_LANG, Common::kPlatformUnknown, b, fanLang, repLang }
+#include "common/scummsys.h"
 
-#define SNATCHER_FLAGS(a, b) FLAGS(Snatcher::GI_SNATCHER, a, b)
+namespace Snatcher {
 
-const SnatcherGameDescription adGameDescs[] = {
-	{
-		{
-			"snatcher",
-			0,
-			AD_ENTRY2s(	"DATA_B0.BIN",	"63170d11da5ebc3a66ecf0fc2d23e78a", 24176,
-						"DATA_J0.BIN",	"4cd2c1d16b116c1cf1f38f8114c9c2ff", 43004),
-			Common::EN_ANY,
-			Common::kPlatformSegaCD,
-			ADGF_TESTING,
-			GUIO2(GUIO_NOSPEECHVOLUME, GUIO_MIDISEGACD)
-		},
-		SNATCHER_FLAGS(MDT_SEGACD, true)
-	},
-
-	{ AD_TABLE_END_MARKER, FLAGS(0, MDT_NONE, false) }
+struct PalEventSCD {
+	uint8 cmd;
+	uint8 delay;
+	uint8 countDown;
+	uint8 destOffset;
+	uint8 len;
+	const uint32 *srcOffsetCur;
+	const uint32 *srcOffsets;
+	const uint8 *srcOrig;
+	uint8 progress;
+	uint8 fD;
+	uint8 fE;
+	uint8 fF;
 };
 
-const PlainGameDescriptor gameList[] = {
-	{ "snatcher", "Snatcher" },
-	{ 0, 0 }
-};
+} // End of namespace Snatcher
 
-} // End of anonymous namespace
+#endif // SNATCHER_PALEVENT_SCD_H

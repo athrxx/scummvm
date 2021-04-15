@@ -19,37 +19,24 @@
 *
 */
 
-#ifndef SNATCHER_RENDER_H
-#define SNATCHER_RENDER_H
-
-#include "common/platform.h"
+#ifndef SNATCHER_SCENE_IMP_H
+#define SNATCHER_SCENE_IMP_H
 
 namespace Snatcher {
 
-class Renderer {
-public:
-	virtual ~Renderer() {}
+#define SH_HEAD_BEGIN(id) \
+	class Scene_##id : public SceneHandler { \
+	public: \
+		Scene_##id(SnatcherEngine *vm, SceneResource *scn, FIO *fio); \
+		~Scene_##id() override; \
+		void operator()() override; \
+	private:
 
-	virtual uint16 screenWidth() const = 0;
-	virtual uint16 screenHeight() const = 0;
-protected:
-	Renderer() {}
-
-private:
-	static Renderer *createSegaRenderer();
-
-public:
-	static Renderer *create(Common::Platform platform) {
-		switch (platform) {
-		case Common::kPlatformSegaCD:
-			return createSegaRenderer();
-		default:
-			break;
-		};
-		return 0;
-	}
-};
+#define SH_HEAD_END(id) }; \
+	SceneHandler *createSceneHandler_##id(SnatcherEngine *vm, SceneResource *scn, FIO *fio) { return new Scene_##id(vm, scn, fio); }
+#define SH_IMP_CTOR(id) \
+	Scene_##id::Scene_##id(SnatcherEngine *vm, SceneResource *scn, FIO *fio) : SceneHandler(vm, scn, fio)
 
 } // End of namespace Snatcher
 
-#endif // SNATCHER_RENDER_H
+#endif // SNATCHER_SCENE_IMP_H
