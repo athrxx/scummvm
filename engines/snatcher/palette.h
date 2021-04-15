@@ -19,34 +19,41 @@
 *
 */
 
-namespace {
+#ifndef SNATCHER_PALETTE_H
+#define SNATCHER_PALETTE_H
 
-#define FLAGS(id, a, b) { id, a, Common::UNK_LANG, Common::kPlatformUnknown, b, Common::UNK_LANG, Common::UNK_LANG }
-#define FLAGS_FAN(id, a, b, fanLang, repLang) { id, a, Common::UNK_LANG, Common::kPlatformUnknown, b, fanLang, repLang }
+#include "common/platform.h"
 
-#define SNATCHER_FLAGS(a, b) FLAGS(Snatcher::GI_SNATCHER, a, b)
+class PaletteManager;
 
-const SnatcherGameDescription adGameDescs[] = {
-	{
-		{
-			"snatcher",
-			0,
-			AD_ENTRY2s(	"DATA_B0.BIN",	"63170d11da5ebc3a66ecf0fc2d23e78a", 24176,
-						"DATA_J0.BIN",	"4cd2c1d16b116c1cf1f38f8114c9c2ff", 43004),
-			Common::EN_ANY,
-			Common::kPlatformSegaCD,
-			ADGF_TESTING,
-			GUIO2(GUIO_NOSPEECHVOLUME, GUIO_MIDISEGACD)
-		},
-		SNATCHER_FLAGS(MDT_SEGACD, true)
-	},
+namespace Snatcher {
 
-	{ AD_TABLE_END_MARKER, FLAGS(0, MDT_NONE, false) }
+class Palette {
+public:
+	Palette(PaletteManager *pm) : _palMan(pm) {}
+	virtual ~Palette() {}
+
+	virtual bool enqueueEvent(const uint8*, uint32) { return true; }
+	virtual void processEventQueue() {}
+
+protected:
+	PaletteManager *_palMan;
+
+private:
+	static Palette *createSegaPalette(PaletteManager *pm);
+
+public:
+	static Palette *create(PaletteManager *pm, Common::Platform platform) {
+		switch (platform) {
+		case Common::kPlatformSegaCD:
+			return createSegaPalette(pm);
+		default:
+			break;
+		};
+		return 0;
+	}
 };
 
-const PlainGameDescriptor gameList[] = {
-	{ "snatcher", "Snatcher" },
-	{ 0, 0 }
-};
+} // End of namespace Snatcher
 
-} // End of anonymous namespace
+#endif // SNATCHER_PALETTE_H
