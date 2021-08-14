@@ -42,6 +42,178 @@
 
 namespace Kyra {
 
+struct Subtitle {
+	enum Align {
+		kAlignLeft = 0,
+		kAlignCenter,
+		kAlignRight
+	};
+
+	uint32 frameStart;
+	uint32 frameEnd;
+	int frameX, frameY, frameW, frameH;
+	Align align;
+	uint8 col1, col2, col3;
+	Screen::FontId fid;
+	const char *str;
+};
+
+struct SubtitleSet {
+	const char *vqaFile;
+	const Subtitle *lines;
+	const int numLines;
+};
+/*
+"Haahahahahaahahaa"
+
+
+HaHaHa!HaHaHa!
+HaHaHaHa
+HaHaHaHaHaHaHa
+
+*/
+static const char *const introSubtitleStrings[] = {
+	"Oops!",
+	"Sorry, I didn't recognize you.",
+	"Malcolm was a normal baby.",
+	"He faced the same temptations as every child.",
+	"And like any other child",
+	"Meow",
+	"his conscience served to guide his actions.",
+	"Meow"
+	"Don't pull that kitty's tail!",
+	"You'll get punished!",
+	"Puuull it!",
+	"It'll be fun!",
+	"Meow",
+	"Hahahahaha! Hahahahaha!",
+	"But resisting temptation was never easy for Malcolm.",
+	"The moral balance was tested frequently during Malcolm's youth.",
+	"Hahahahaha!",
+	"Gunther!",
+	"What did that Squirrel ever do to you?",
+	"Take a hike, Stewart!",
+	"We're having fun here.",
+	"A complete deterioration was inevitable.",
+	"Hahahahaha! Whahahaaa!",
+	"As young Malcolm grew into manhood...",
+	"...he became famous and successful...",
+	"...in his own way.",
+	"But Malcolm's path was never easy",
+	"and many setbacks disturbed his plans.",
+	"Finally, in the depth of his greatest humiliation",
+	"he is imprisoned in his own stony form.",
+	"As the ignorant residents of Kyra sleep",
+	"their worst nightmare begins.",
+	"And Malcolm prepares to greet the world again.",
+	"Now, with your help we can finally hear Malcolm's side of the story."
+};
+
+static const char *const boatSubtitleStrings[] = {
+	"That's the voice!",
+	"We're almost there.",
+	"Let the attack on Kyrandia begin."
+};
+
+Subtitle introLines[] = {
+	{
+		360, 420,
+		0, 180, 320, 10,
+		Subtitle::kAlignCenter,
+		0xF, 0x00, 0x00,
+		Screen::FID_8_FNT,
+		"Oops!"
+	},
+	{
+		380, 420,
+		0, 190, 320, 10,
+		Subtitle::kAlignCenter,
+		0xF, 0x00, 0x00,
+		Screen::FID_8_FNT,
+		"Sorry, I didn't recognize you."
+	},
+	{
+		750, 770,
+		0, 180, 320, 10,
+		Subtitle::kAlignCenter,
+		0xF, 0x00, 0x00,
+		Screen::FID_8_FNT,
+		"Malcolm was a normal baby."
+	},
+	{
+		810, 830,
+		0, 190, 320, 10,
+		Subtitle::kAlignCenter,
+		0xF, 0x00, 0x00,
+		Screen::FID_8_FNT,
+		"He faced the same temptations as every child."
+	},
+	{
+		870, 890,
+		0, 190, 320, 10,
+		Subtitle::kAlignCenter,
+		0xF, 0x00, 0x00,
+		Screen::FID_8_FNT,
+		"And like any other child his conscience served to guide his actions."
+	},
+	{
+		930, 950,
+		0, 180, 320, 10,
+		Subtitle::kAlignCenter,
+		0xF, 0x00, 0x00,
+		Screen::FID_8_FNT,
+		"Don't pull that kitty's tail!"
+	},
+	{
+		970, 990,
+		0, 190, 320, 10,
+		Subtitle::kAlignCenter,
+		0xF, 0x00, 0x00,
+		Screen::FID_8_FNT,
+		"You'll get punished!"
+	},
+	{
+		1030, 1050,
+		0, 180, 320, 10,
+		Subtitle::kAlignCenter,
+		0xF, 0x00, 0x00,
+		Screen::FID_8_FNT,
+		"Puuull it!"
+	},
+	{
+		1090, 1110,
+		0, 190, 320, 10,
+		Subtitle::kAlignCenter,
+		0xF, 0x00, 0x00,
+		Screen::FID_8_FNT,
+		"It'll be fun!"
+	}
+};
+
+Subtitle boatLines[] = {
+	{
+		0, 100,
+		0, 180, 320, 10,
+		Subtitle::kAlignCenter,
+		0xF, 0x00, 0x00,
+		Screen::FID_8_FNT,
+		"TEST TEST TEST"
+	},
+	{
+		300, 400,
+		0, 180, 320, 10,
+		Subtitle::kAlignCenter,
+		0xF, 0x00, 0x00,
+		Screen::FID_8_FNT,
+		"TEST2 TEST2 TEST2"
+	}
+};
+
+SubtitleSet subtitles[] = {
+	{ "K3INTRO", introLines, ARRAYSIZE(introLines) },
+	{ "BOAT", boatLines, ARRAYSIZE(boatLines) }
+};
+
 static uint32 readTag(Common::SeekableReadStream *stream) {
 	// Some tags have to be on an even offset, so they are padded with a
 	// zero byte. Skip that.
@@ -617,6 +789,14 @@ void VQAMovie::play() {
 		int x = (Screen::SCREEN_W - width) / 2;
 		int y = (Screen::SCREEN_H - height) / 2;
 
+		const SubtitleSet *sub = 0;
+		for (int i = 0; i < ARRAYSIZE(subtitles); ++i) {
+			if (!scumm_strnicmp(subtitles[i].vqaFile, _file.getName(), strnlen_s(subtitles[i].vqaFile, 8))) {
+				sub = &subtitles[i];
+			}
+		}
+		
+
 		_decoder->start();
 
 		// Note that decoding starts at frame -1. That's because there
@@ -651,6 +831,25 @@ void VQAMovie::play() {
 				}
 
 				_system->copyRectToScreen((const byte *)surface->getBasePtr(0, 0), surface->pitch, x, y, width, height);
+			}
+
+			if (sub) {
+				for (int i = 0; i < sub->numLines; ++i) {
+					const Subtitle *s = &sub->lines[i];
+					if (_decoder->getCurFrame() >= s->frameStart && _decoder->getCurFrame() <= s->frameEnd) {
+						_screen->fillRect(s->frameX, s->frameY, s->frameX + s->frameW - 1, s->frameY + s->frameH - 1, s->col3);
+						Screen::FontId of = _screen->setFont(s->fid);
+						int cp = _screen->setCurPage(0);
+						_screen->printText(s->str, s->frameX, s->frameY, s->col1, s->col2);
+						_screen->setCurPage(0);
+						_screen->setFont(of);
+						_screen->updateScreen();
+					} /*else {
+						_screen->fillRect(0, 0, 25, 8, 0);
+						_screen->printText(Common::String::format("%03d", _decoder->getCurFrame()).c_str(), 0, 0, 255, 0);
+						_screen->updateScreen();
+					}*/
+				}
 			}
 
 			_screen->updateBackendScreen(true);
