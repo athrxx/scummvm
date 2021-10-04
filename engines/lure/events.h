@@ -34,6 +34,7 @@ class Mouse {
 private:
 	CursorType _cursorNum;
 	int16 _x, _y;
+	int16 _x2, _y2;
 	bool _lButton, _rButton, _mButton;
 public:
 	Mouse();
@@ -49,6 +50,8 @@ public:
 	void setPosition(int x, int y);
 	int16 x() { return _x; }
 	int16 y() { return _y; }
+	int16 clickedX() { return _x2; }
+	int16 clickedY() { return _y2; }
 	bool lButton() { return _lButton; }
 	bool rButton() { return _rButton; }
 	bool mButton() { return _mButton; }

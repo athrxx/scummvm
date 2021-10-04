@@ -45,6 +45,8 @@ Mouse::Mouse() {
 	_cursorNum = CURSOR_ARROW;
 	_x = 0;
 	_y = 0;
+	_x2 = 0;
+	_y2 = 0;
 	setCursorNum(CURSOR_ARROW);
 }
 
@@ -76,6 +78,11 @@ void Mouse::handleEvent(Common::Event event) {
 		break;
 	default:
 		break;
+	}
+
+	if (_lButton || _mButton || _rButton) {
+		_x2 = (int16)event.mouse.x + 128;
+		_y2 = (int16)event.mouse.y + 128;
 	}
 }
 

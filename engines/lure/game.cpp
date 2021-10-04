@@ -679,7 +679,7 @@ void Game::handleLeftClick() {
 			room.hotspotId() == 0 ? 0xffff : room.hotspotId());
 	} else {
 		// Walking within room
-		player->walkTo(mouse.x(), mouse.y(), 0);
+		player->walkTo(mouse.clickedX(), mouse.clickedY(), 0);
 	}
 }
 

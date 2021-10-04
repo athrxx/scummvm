@@ -489,7 +489,7 @@ void Hotspot::walkTo(int16 endPosX, int16 endPosY, uint16 destHotspot) {
 		mouse.setCursorNum(CURSOR_TIME_START, 0, 0);
 	}
 
-	_destX = endPosX;
+	_destX = endPosX - 16;
 	_destY = endPosY;
 	_destHotspotId = destHotspot;
 	currentActions().addFront(START_WALKING, _roomNumber);
@@ -4532,9 +4532,9 @@ void PathFinder::initVars() {
 	_destX = _hotspot->destX();
 	_destY = _hotspot->destY();
 
-	if (_destX < 10)
+	if (_destX < 128 + 10)
 		_destX -= 50;
-	if (_destX >= FULL_SCREEN_WIDTH-10)
+	if (_destX >= 128 + FULL_SCREEN_WIDTH - 10)
 		_destX += 50;
 
 	_xPos = 0;
