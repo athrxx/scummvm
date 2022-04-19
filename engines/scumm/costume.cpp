@@ -967,6 +967,14 @@ void ClassicCostumeLoader::costumeDecodeData(Actor *a, int frame, uint usemask) 
 	loadCostume(a->_costume);
 
 	anim = newDirToOldDir(a->getFacing()) + frame * 4;
+	int frame2 = frame;
+
+	if (_vm->_game.version == 6) {
+		// Fix bug mentioned here: https://github.com/scummvm/scummvm/pull/3795/
+		// We really do need to store the direction info in the frame array, too (like the original interpreter).
+		// This probably does apply to more versions than just 6, but it has to be checked...
+		frame2 = anim;
+	}
 
 	if (anim > _numAnim) {
 		return;
@@ -1006,7 +1014,7 @@ void ClassicCostumeLoader::costumeDecodeData(Actor *a, int frame, uint usemask) 
 				if (j == 0xFFFF) {
 					a->_cost.curpos[i] = 0xFFFF;
 					a->_cost.start[i] = 0;
-					a->_cost.frame[i] = frame;
+					a->_cost.frame[i] = frame2;
 				} else {
 					extra = *r++;
 					cmd = _animCmds[j];
@@ -1019,7 +1027,7 @@ void ClassicCostumeLoader::costumeDecodeData(Actor *a, int frame, uint usemask) 
 						a->_cost.end[i] = j + (extra & 0x7F);
 						if (extra & 0x80)
 							a->_cost.curpos[i] |= 0x8000;
-						a->_cost.frame[i] = frame;
+						a->_cost.frame[i] = frame2;
 					}
 				}
 			} else {

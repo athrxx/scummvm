@@ -1516,6 +1516,14 @@ void Actor::setDirection(int direction) {
 		vald = _cost.frame[i];
 		if (vald == 0xFFFF)
 			continue;
+		if (_vm->_game.version == 6) {
+			// Fix bug mentioned here: https://github.com/scummvm/scummvm/pull/3795/
+			// We really do need to store the direction info in the frame array, too (like the original interpreter).
+			// This probably does apply to more versions than just 6, but it has to be checked...
+			if ((vald & 3) == newDirToOldDir(direction))
+				continue;
+			vald >>= 2;
+		}
 		_vm->_costumeLoader->costumeDecodeData(this, vald, (_vm->_game.version <= 2) ? 0xFFFF : aMask);
 	}
 
@@ -3799,6 +3807,13 @@ void Actor::saveLoadWithSerializer(Common::Serializer &s) {
 		}
 
 		setDirection(_facing);
+	}
+
+	if (s.isLoading() && _vm->_game.version == 6 && s.getVersion() < VER(105)) {
+		// We can't reconstruct the frame's direction if it is different
+		// from the actor direction, this is the best we can do...
+		for (int i = 0; i < 16; ++i)
+			_cost.frame[i] = (_cost.frame[i] << 2) | newDirToOldDir(_facing);
 	}
 }
 
