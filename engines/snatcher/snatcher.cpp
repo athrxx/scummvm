@@ -24,6 +24,7 @@
 #include "snatcher/snatcher.h"
 #include "snatcher/sound.h"
 
+#include "common/endian.h"
 #include "common/events.h"
 #include "common/system.h"
 
@@ -90,7 +91,8 @@ struct Struct80 {
 	uint8 f15;
 	uint8 f16;
 	uint8 f1c;
-
+	uint32 f20;
+	uint8 f24;
 	uint8 f25;
 	uint8 f26;
 	uint8 f27;
@@ -123,6 +125,13 @@ bool _var_7886;
 uint8 _var_7893;
 
 uint16 _word_B6406;
+
+
+int16 _gg_A__, _gg_A__cntDwn;
+uint8 _gg_B;
+uint32 _gg_dword_787A;
+bool gfx1_sub1() { return true; }
+void gfx1_sub2() {}
 
 bool SnatcherEngine::start() {
 	_scene = _fio->createSceneResource(2);
@@ -218,6 +227,41 @@ bool SnatcherEngine::start() {
 		uint32 nextFrame = _system->getMillis() + 16;
 
 		_gfx->nextFrame();
+
+
+	
+
+		for (Struct80 *p = _s80; p < &_s80[64]; ++p) {
+			_gg_A__cntDwn = _gg_A__;
+			if ((p->f1c || p->f26) && _gg_B)
+				continue;
+			for (bool lp = true; lp; ) {
+				if (p->cmd != 1) {
+					lp = false;
+				} else {
+					if (p->f25 & 4) {
+						if (p->f20 > _gg_dword_787A)
+							lp = false;
+						else
+							p->f25 &= ~4;
+					}
+					if (lp) {
+						if (p->f25 & 1) {
+							lp = false;
+						} else {
+							gfx1_sub2();
+							--_gg_A__cntDwn;
+							if (_gg_A__cntDwn < 0 || !p->f26)
+								lp = false;
+						}
+					}
+				}
+			} 
+		}
+
+		for (Struct80 *p = _s80; p < &_s80[64]; ++p) {
+
+		}
 
 		delayUntil(nextFrame);
 	}

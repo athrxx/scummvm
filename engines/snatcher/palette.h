@@ -35,6 +35,7 @@ public:
 
 	virtual bool enqueueEvent(const uint8*, uint32) { return true; }
 	virtual void processEventQueue() {}
+	virtual void clearEvents() {}
 
 protected:
 	PaletteManager *_palMan;

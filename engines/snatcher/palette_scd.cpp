@@ -38,6 +38,7 @@ public:
 
 	bool enqueueEvent(const uint8 *data, uint32 curPos) override;
 	void processEventQueue() override;
+	void clearEvents() override;
 
 private:
 	typedef Common::Functor1Mem<PalEventSCD*, void, SCDPalette> EventProc;
@@ -153,6 +154,10 @@ void SCDPalette::processEventQueue() {
 	//if (_updateFlags & 2)
 		updateSystemPalette();
 	_updateFlags = 0;
+}
+
+void SCDPalette::clearEvents() {
+	memset(_eventQueue, 0, 12 * sizeof(PalEventSCD));
 }
 
 void SCDPalette::event_palSet(PalEventSCD *evt) {

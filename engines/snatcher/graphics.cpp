@@ -44,6 +44,10 @@ void GraphicsEngine::enqueuePaletteEvent(const uint8 *data, uint32 curPos) {
 
 void GraphicsEngine::nextFrame() {
 	//if (!_skipManyEvents) {
+		//_renderer->processEventQueue();
+	//}
+
+	//if (!_skipManyEvents) {
 		//_blockPalEvent = false;
 		_palette->processEventQueue();
 	//}
