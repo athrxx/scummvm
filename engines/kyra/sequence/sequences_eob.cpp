@@ -2287,10 +2287,6 @@ int EoBEngine::mainMenuLoop() {
 
 		while (sel == -1 && !shouldQuit())
 			sel = _gui->simpleMenu_process(8, _mainMenuStrings, 0, -1, 0);
-			if (_flags.platform == Common::kPlatformSegaCD)
-				_screen->sega_getRenderer()->renderToPage(0, 6, 20, 26, 5);
-			_screen->updateScreen();
-		}
 	} while ((sel < 0 || sel > 5) && !shouldQuit());
 
 	return sel + 1;
@@ -2461,7 +2457,7 @@ void EoBEngine::seq_xdeath() {
 
 void EoBEngine::seq_segaOpeningCredits(bool jumpToTitle) {
 	uint16 *scrollTable = new uint16[0x200]();
-	SegaRenderer *r = _screen->sega_getRenderer();
+	SCDRenderer *r = _screen->sega_getRenderer();
 
 	r->setPitch(128);
 	r->setPlaneTableLocation(SCDRenderer::kPlaneA, 0xE000);
