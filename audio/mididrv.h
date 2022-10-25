@@ -555,7 +555,7 @@ public:
 	virtual void modulationWheel(byte value) { controlChange(MidiDriver::MIDI_CONTROLLER_MODULATION, value); }
 	virtual void volume(byte value) { controlChange(MidiDriver::MIDI_CONTROLLER_VOLUME, value); }
 	virtual void panPosition(byte value) { controlChange(MidiDriver::MIDI_CONTROLLER_PANNING, value); }
-	virtual void pitchBendFactor(byte value) = 0;
+	virtual void pitchBendFactor(byte value) {}
 	virtual void transpose(int8 value) {}
 	virtual void detune(int16 value) { controlChange(17, value & 0xff); }
 	virtual void priority(byte value) { }
@@ -565,8 +565,8 @@ public:
 	virtual void bankSelect(byte bank) {}
 	virtual void allNotesOff() { controlChange(MidiDriver::MIDI_CONTROLLER_ALL_NOTES_OFF, 0); }
 
-	// SysEx messages
-	virtual void sysEx_customInstrument(uint32 type, const byte *instr, uint32 dataSize) = 0;
+	// SCUMM SysEx messages
+	virtual void sysEx_customInstrument(uint32 type, const byte *instr, uint32 dataSize) {}
 };
 /** @} */
 #endif
