@@ -52,10 +52,6 @@ public:
 
 	// Control Change messages
 	void controlChange(byte control, byte value) override;
-	void pitchBendFactor(byte value) override;
-
-	// SysEx messages
-	void sysEx_customInstrument(uint32 type, const byte *instr, uint32 datasize) override {}
 
 	// Only to be called by the owner
 	void init(MidiDriver *owner, byte channel);

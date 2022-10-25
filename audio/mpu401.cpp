@@ -67,11 +67,6 @@ void MidiChannel_MPU401::controlChange(byte control, byte value) {
 	_owner->send(value << 16 | control << 8 | 0xB0 | _channel);
 }
 
-void MidiChannel_MPU401::pitchBendFactor(byte value) {
-	_owner->setPitchBendRange(_channel, value);
-}
-
-
 const char *MidiDriver::getErrorName(int error_code) {
 	static const char *const midi_errors[] = {
 		"No error",
