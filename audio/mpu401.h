@@ -52,10 +52,6 @@ public:
 
 	// Control Change messages
 	virtual void controlChange(byte control, byte value);
-	virtual void pitchBendFactor(byte value);
-
-	// SysEx messages
-	virtual void sysEx_customInstrument(uint32 type, const byte *instr, uint32 datasize) {}
 
 	// Only to be called by the owner
 	void init(MidiDriver *owner, byte channel);
