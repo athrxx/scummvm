@@ -135,6 +135,9 @@ public:
 		#ifdef USE_MT32EMU
 		LINK_PLUGIN(MT32)
 		#endif
+		#ifdef USE_VST
+		LINK_PLUGIN(VST)
+		#endif
 		#if defined(USE_SONIVOX)
 		LINK_PLUGIN(EAS)
 		#endif
