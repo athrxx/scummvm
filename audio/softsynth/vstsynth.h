@@ -41,6 +41,7 @@ public:
 	void close() override;
 
 	void send(uint32 msg) override;
+	void sysEx(const byte *msg, uint16 length) override;
 
 	int getRate() const override { return _outputRate; }
 	bool isStereo() const override { return true; }
@@ -50,13 +51,17 @@ public:
 
 private:
 	void generateSamples(int16 *buf, int len) override;
-	void onTimer() override;
 
 	VSTMidiChannel **_channels;
 	const int _numChannels;
 
 	VSTInterface *_intf;
 	const DeviceHandle _device;
+	Audio::SoundHandle _soundHandle;
+
+	float *_outputData;
+	float *_nullBuffer;
+	int _outputDataSize;
 
 	const uint32 _outputRate;
 };

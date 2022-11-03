@@ -35,28 +35,50 @@ VSTInterface *VSTInterface_MAC_create(const PluginInfo *target) { /*TODO*/ retur
 #endif
 } // end of namespace VST
 
-VSTInterface::VSTInterface() : _ready(false) {
 
+VSTInterface::VSTInterface() : _eventsChain(nullptr), _eventsCount(0), _defaultSettings(nullptr), _settingsSize(0), _defaultParameters(nullptr), _numParameters(0) {
 }
 
 VSTInterface::~VSTInterface() {
-	close();
+	clearChain();
 }
 
 int VSTInterface::open() {
+	if (!startPlugin())
+		return MidiDriver::MERR_CANNOT_CONNECT;
+
+	_settingsSize = readSettings(&_defaultSettings);
+	_numParameters = readParameters(&_defaultParameters);
+
 	return 0;
 }
 
 void VSTInterface::close() {
-
+	terminatePlugin();
+	_defaultSettings = nullptr;
+	_settingsSize = 0;
+	delete[] _defaultParameters;
+	_defaultParameters = nullptr;
+	_numParameters = 0;
 }
 
 void VSTInterface::send(uint32 msg) {
-
+	_eventsChain = new (_eventsNodePool) EvtNode(_eventsChain, msg);
+	++_eventsCount;
 }
 
-void VSTInterface::update() {
+void VSTInterface::sysex(const uint8 *msg, uint32 len) {
+	_eventsChain = new (_eventsNodePool) EvtNode(_eventsChain, msg, len);
+	++_eventsCount;
+}
 
+void VSTInterface::clearChain() {
+	while (_eventsChain) {
+		EvtNode *e = _eventsChain;
+		_eventsChain = _eventsChain->_next;
+		_eventsNodePool.deleteChunk(e);
+	}
+	_eventsCount = 0;
 }
 
 const VST::PluginsSearchResult getSearchResult(const MusicPluginObject *plugin);
@@ -71,7 +93,7 @@ VSTInterface *VSTInterface::create(MidiDriver::DeviceHandle dev) {
 		const MusicPluginObject &musicPlugin = (*m)->get<MusicPluginObject>();
 		if (MidiDriver::getDeviceString(dev, MidiDriver::kDriverId).equals(musicPlugin.getId())) {
 			if (!sr.empty()) // I don't see how this could happen, but let's check anyway...
-				warning("VSTInterface::create(): Encountered multiple VST plugins");
+				warning("VSTInterface::create(): Encountered multiple instances of the ScummVM VST plugin");
 			sr = getSearchResult(&musicPlugin);
 		}
 	}
