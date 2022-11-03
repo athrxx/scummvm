@@ -27,13 +27,14 @@
 
 #include "audio/mididrv.h"
 #include "common/path.h"
+#include "common/ptr.h"
 
 namespace VST {
 
 struct PluginInfo {
-	PluginInfo(const char *pName, const char *pPath, int ver, MusicType tType) : name(pName), path(pPath), version(ver), type(tType) {}
+	PluginInfo(const char *plgName, Common::String &plgPath, int ver, MusicType mtype) : name(plgName), path(plgPath), version(ver), type(mtype) {}
 	Common::String name;
-	Common::Path path;
+	Common::String path;
 	int version;
 	MusicType type;
 };
@@ -42,9 +43,15 @@ typedef Common::Array<PluginInfo> PluginsSearchResult;
 
 #if defined(WIN32) || defined(WINDOWS) /*|| defined(MACOSX)*/
 PluginsSearchResult detectVSTPlugins();
+void vstDetect_prefetch();
+void vstDetect_releasePrefetchData();
 #else
 PluginsSearchResult detectVSTPlugins() { return PluginsSearchResult(); }
+void vstDetect_prefetch() {}
+void vstDetect_releasePrefetchData() {}
 #endif
+
+MusicType getPluginMusicType(const char *pluginName);
 
 } // end of namespace VST
 
