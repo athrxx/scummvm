@@ -26,6 +26,7 @@
 #define BACKENDS_VSTINTF_H
 
 #include "audio/mididrv.h"
+#include "common/memorypool.h"
 
 class VSTInterface {
 protected:
@@ -36,14 +37,49 @@ public:
 	int open();
 	void close();
 
+	virtual void setSampleRate(uint32 rate) = 0;
+	virtual void setBlockSize(uint32 bsize) = 0;
 	void send(uint32 msg);
-	void update();
-
-	//const char* getErrorDescription
+	void sysex(const uint8 *msg, uint32 len);
+	virtual void generateSamples(float **in, float **out, uint32 len) = 0;
+	bool hasEditor() { return _hasEditor; }
+	virtual void runEditor() = 0;
 
 protected:
+	void clearChain();
+
+	struct EvtNode {
+		EvtNode(EvtNode *chain, uint32 msg) : _next(chain), _syx(nullptr), _dat(msg) {}
+		EvtNode(EvtNode *chain, const uint8 *data, uint32 dataSize) : _next(chain), _syx(nullptr), _dat(dataSize) {
+			uint8 *buf = new uint8[dataSize];
+			assert(buf);
+			memcpy(buf, data, dataSize);
+			_syx = buf;
+		}
+		~EvtNode() {
+			delete[] _syx;
+		}
+		uint32 _dat;
+		const uint8 *_syx;
+		EvtNode *_next;
+	};
+
+	Common::ObjectPool<EvtNode> _eventsNodePool;
+	EvtNode *_eventsChain;
+	int _eventsCount;
+
+	bool _hasEditor;
+
 private:
-	bool _ready;
+	virtual bool startPlugin() = 0;
+	virtual void terminatePlugin() = 0;
+	virtual uint32 readSettings(uint8 **dest) = 0;
+	virtual uint32 readParameters(uint32 **dest) = 0;
+
+	uint8 *_defaultSettings;
+	uint32 _settingsSize;
+	uint32 *_defaultParameters;
+	uint32 _numParameters;
 
 public:
 	static VSTInterface *create(MidiDriver::DeviceHandle dev);
