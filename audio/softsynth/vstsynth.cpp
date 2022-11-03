@@ -39,7 +39,7 @@ public:
 };
 
 VSTMidiDriver::VSTMidiDriver(DeviceHandle dev, Audio::Mixer *mixer) : MidiDriver_Emulated(mixer), _device(dev), _outputRate(mixer ? mixer->getOutputRate() : 0),
-	_channels(nullptr), _numChannels(16), _intf(nullptr) {
+	_channels(nullptr), _numChannels(16), _intf(nullptr), _outputData(nullptr), _nullBuffer(nullptr), _outputDataSize(0) {
 	assert(mixer);
 
 	_channels = new VSTMidiChannel*[_numChannels];
@@ -49,11 +49,16 @@ VSTMidiDriver::VSTMidiDriver(DeviceHandle dev, Audio::Mixer *mixer) : MidiDriver
 }
 
 VSTMidiDriver::~VSTMidiDriver() {
+	close();
+
 	if (_channels) {
 		for (int i = 0; i < _numChannels; ++i)
 			delete _channels[i];
 		delete[] _channels;
 	}
+
+	delete[] _outputData;
+	delete[] _nullBuffer;
 }
 
 int VSTMidiDriver::open() {
@@ -63,20 +68,40 @@ int VSTMidiDriver::open() {
 	if ((_intf = VSTInterface::create(_device)) == nullptr)
 		return MERR_DEVICE_NOT_AVAILABLE;
 
+	_intf->setSampleRate(_mixer->getOutputRate());
+
 	if (_intf->open())
 		return MERR_CANNOT_CONNECT;
 
-	return MidiDriver_Emulated::open();
+	int res = MidiDriver_Emulated::open();
+
+	_mixer->playStream(Audio::Mixer::kPlainSoundType, &_soundHandle, this, -1, Audio::Mixer::kMaxChannelVolume, 0, DisposeAfterUse::NO, true);
+
+	return res;
 }
 
 void VSTMidiDriver::close() {
+	_mixer->stopHandle(_soundHandle);
 	_isOpen = false;
-	delete _intf;
-	_intf = nullptr;
+	if (_intf) {
+		_intf->close();
+		delete _intf;
+		_intf = nullptr;
+	}
 }
 
 void VSTMidiDriver::send(uint32 msg) {
+	if (!isOpen())
+		return;
+	Common::StackLock lock(_mixer->mutex());
+	_intf->send(msg);
+}
 
+void VSTMidiDriver::sysEx(const byte *msg, uint16 length) {
+	if (!isOpen())
+		return;
+	Common::StackLock lock(_mixer->mutex());
+	_intf->sysex(msg, length);
 }
 
 MidiChannel *VSTMidiDriver::allocateChannel() {
@@ -92,11 +117,43 @@ MidiChannel *VSTMidiDriver::getPercussionChannel() {
 }
 
 void VSTMidiDriver::generateSamples(int16 *buf, int len) {
+	if (!isOpen())
+		return;
 
-}
+	int bsize = isStereo() ? len << 1 : len;
 
-void VSTMidiDriver::onTimer() {
+	if (bsize > _outputDataSize) {
+		delete[] _outputData;
+		delete[] _nullBuffer;
+		_outputData = new float[bsize]();
+		_nullBuffer = new float[bsize]();
+		_outputDataSize = bsize;
+		_intf->setBlockSize(len);
+	} else {
+		memset(_outputData, 0, bsize * sizeof(float));
+	}
 
+	float *dest[2] = { _outputData, &_outputData[len] };
+	float *dummySrc[2] = { _nullBuffer, &_nullBuffer[len] };	
+
+	_intf->generateSamples(dummySrc, dest, len);
+
+	const float *s1 = dest[0];
+	const float *s2 = dest[1];
+
+	if (isStereo()) {
+		while (len--) {
+			*buf++ = CLIP<int>((*s1 > 0 ? (int32)(*s1 * 32767.0f) : (int32)(*s1 * 32768.0f)), -32768, 32767);
+			*buf++ = CLIP<int>((*s2 > 0 ? (int32)(*s2 * 32767.0f) : (int32)(*s2 * 32768.0f)), -32768, 32767);
+			s1++;
+			s2++;
+		}
+	} else {
+		while (len--) {
+			*buf++ = CLIP<int>((*s1 > 0 ? (int32)(*s1 * 32767.0f) : (int32)(*s1 * 32768.0f)), -32768, 32767);
+			s1++;
+		}
+	}
 }
 
 }; // end of namespace VSTSynth

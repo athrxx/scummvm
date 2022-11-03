@@ -30,6 +30,14 @@
 
 class VSTSynthPlugin final : public MusicPluginObject {
 public:
+	VSTSynthPlugin() {
+		VST::vstDetect_prefetch();
+	}
+
+	~VSTSynthPlugin() {
+		VST::vstDetect_releasePrefetchData();
+	}
+
 	const char *getName() const override {
 		return "VST MIDI";
 	}
@@ -46,31 +54,26 @@ public:
 
 private:
 	mutable VST::PluginsSearchResult _pluginsSearchResult;
+	mutable bool _pluginSearchDone = false;
 };
 
 MusicDevices VSTSynthPlugin::getDevices() const {
-	if (_pluginsSearchResult.empty())
+	if (!_pluginSearchDone) {
 		_pluginsSearchResult = VST::detectVSTPlugins();
+		_pluginSearchDone = true;
+	}
 
 	MusicDevices devices;
 
-	if (!_pluginsSearchResult.empty()) {
-		for (VST::PluginsSearchResult::const_iterator i = _pluginsSearchResult.begin(); i != _pluginsSearchResult.end(); ++i)
-			devices.push_back(MusicDevice(this, i->name.c_str(), i->type));
-
-	}
+	for (VST::PluginsSearchResult::const_iterator i = _pluginsSearchResult.begin(); i != _pluginsSearchResult.end(); ++i)
+		devices.push_back(MusicDevice(this, i->name.c_str(), i->type));
 
 	return devices;
 }
 
 bool VSTSynthPlugin::checkDevice(MidiDriver::DeviceHandle) const {
-	if (0) {
-		warning("Failure");
-		return false;
-	}
-
 	return true;
-	}
+}
 
 Common::Error VSTSynthPlugin::createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle dev) const {
 	*mididriver = new VSTSynth::VSTMidiDriver(dev, g_system->getMixer());
@@ -91,5 +94,25 @@ const VST::PluginsSearchResult getSearchResult(const MusicPluginObject *plugin) 
 //#else
 REGISTER_PLUGIN_STATIC(VST, PLUGIN_TYPE_MUSIC, VSTSynthPlugin);
 //#endif
+
+namespace VST {
+
+// Plugins can be whitelisted here so that their sound type gets set to MT_MT32.
+// Otherwise they will be set to MT_GM, since that is correct in 99% of cases...
+MusicType getPluginMusicType(const char *pluginName) {
+	static const char *mt32TypePlugins[] {
+		"D-50" // This isn't really MT-32 compatible, but probably better than the MT_GM setting
+	};
+
+	Common::String testStr(pluginName);
+	for (int i = 0; i < ARRAYSIZE(mt32TypePlugins); ++i) {
+		if (testStr.equals(mt32TypePlugins[i]))
+			return MT_MT32;
+	}
+
+	return MT_GM;
+}
+
+} // end of namespace VST
 
 #endif
