@@ -83,9 +83,20 @@ LPCVOID dllDetectCallback (LPVOID, int32 opcode, ...) {
 }
 
 static PluginsSearchResult *_prefetchSearchResult = nullptr;
+HANDLE _prefetchThread = nullptr;
+DWORD _prefetchThreadId = 0;
 
 PluginsSearchResult detectVSTPlugins() {
 	PluginsSearchResult res;
+
+	if (_prefetchThread && _prefetchThreadId != GetCurrentThreadId()) {
+		uint32 wr = WaitForSingleObject(_prefetchThread, 10000);
+		CloseHandle(_prefetchThread);
+		_prefetchThread = nullptr;
+		_prefetchThreadId = 0;
+		if (wr != WAIT_OBJECT_0)
+			warning("detectVSTPlugins(): %s", (wr == WAIT_TIMEOUT) ? "Prefetch thread timeout" : "Unknown prefetch thread failure");
+	}
 
 	if (_prefetchSearchResult)
 		return *_prefetchSearchResult;
@@ -190,14 +201,36 @@ PluginsSearchResult detectVSTPlugins() {
 	return res;
 }
 
+// The detection takes very long. An we can't do much about it, since it's the init functions of the
+// plugins that cause the delay (e.g. the Roland Sound Canvas VA needs over 2 seconds, ADLPlug and OPNPlug
+// take around 700 - 800 msecs each). So, we make a prefetch detection in a thread...
+DWORD prefetch_threadProc(LPVOID) {
+	static PluginsSearchResult res = detectVSTPlugins();
+	_prefetchSearchResult = &res;
+	return 0;
+}
+
 void vstDetect_prefetch() {
-	//static PluginsSearchResult res = detectVSTPlugins();
-	//_prefetchSearchResult = &res;
+	if (_prefetchSearchResult)
+		return;
+	_prefetchThread = CreateThread(NULL, NULL, &prefetch_threadProc, NULL, NULL, &_prefetchThreadId);
 }
 
 void vstDetect_releasePrefetchData() {
-	//_prefetchSearchResult->clear();
-	//_prefetchSearchResult = nullptr;
+	if (!_prefetchSearchResult)
+		return;
+
+	if (_prefetchThread) {
+		uint32 wr = WaitForSingleObject(_prefetchThread, 10000);
+		CloseHandle(_prefetchThread);
+		_prefetchThread = nullptr;
+		_prefetchThreadId = 0;
+		if (wr != WAIT_OBJECT_0)
+			warning("detectVSTPlugins(): %s", (wr == WAIT_TIMEOUT) ? "Prefetch thread timeout" : "Unknown prefetch thread failure");
+	}
+
+	_prefetchSearchResult->clear();
+	_prefetchSearchResult = nullptr;
 }
 
 } // end of namespace VST
