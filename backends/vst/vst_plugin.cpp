@@ -31,6 +31,9 @@
 class VSTSynthPlugin final : public MusicPluginObject {
 public:
 	VSTSynthPlugin() {
+		// The detection takes very long. An we can't do much about it, since it's the init functions of the
+		// plugins that cause the delay (e.g. the Roland Sound Canvas VA needs ~2 seconds, ADLPlug and OPNPlug
+		// take around 700 - 800 msecs each). So, we make a prefetch detection in a thread...
 		VST::vstDetect_prefetch();
 	}
 
