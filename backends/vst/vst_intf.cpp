@@ -26,6 +26,11 @@
 #include "backends/vst/vst_detect.h"
 #include "backends/vst/vst_intf.h"
 
+#include "common/config-manager.h"
+#include "common/savefile.h"
+#include "common/system.h"
+
+#define VST_SAVE_VERSION	1
 
 namespace VST {
 #if defined(WIN32) || defined(WINDOWS)
@@ -36,7 +41,7 @@ VSTInterface *VSTInterface_MAC_create(const PluginInfo *target) { /*TODO*/ retur
 } // end of namespace VST
 
 
-VSTInterface::VSTInterface() : _eventsChain(nullptr), _eventsCount(0), _defaultSettings(nullptr), _settingsSize(0), _defaultParameters(nullptr), _numParameters(0) {
+VSTInterface::VSTInterface(const Common::String &pluginName) : _pluginName(pluginName), _eventsChain(nullptr), _eventsCount(0), _defaultSettings(nullptr), _defaultSettingsSize(0), _defaultParameters(nullptr), _numDefParameters(0) {
 }
 
 VSTInterface::~VSTInterface() {
@@ -47,19 +52,32 @@ int VSTInterface::open() {
 	if (!startPlugin())
 		return MidiDriver::MERR_CANNOT_CONNECT;
 
-	_settingsSize = readSettings(&_defaultSettings);
-	_numParameters = readParameters(&_defaultParameters);
+	uint8 *tmp1 = nullptr;
+	_defaultSettingsSize = getActiveSettings(&tmp1);
+	_defaultSettings = tmp1;
+
+	if (_defaultSettings == nullptr || _defaultSettingsSize == 0) {
+		uint32 *tmp2 = nullptr;
+		_numDefParameters = getActiveParameters(&tmp2);
+		_defaultParameters = tmp2;
+	}
+
+	loadSettings();
 
 	return 0;
 }
 
 void VSTInterface::close() {
+	saveSettings();
+
 	terminatePlugin();
+
+	delete[] _defaultSettings;
 	_defaultSettings = nullptr;
-	_settingsSize = 0;
+	_defaultSettingsSize = 0;
 	delete[] _defaultParameters;
 	_defaultParameters = nullptr;
-	_numParameters = 0;
+	_numDefParameters = 0;
 }
 
 void VSTInterface::send(uint32 msg) {
@@ -79,6 +97,97 @@ void VSTInterface::clearChain() {
 		_eventsNodePool.deleteChunk(e);
 	}
 	_eventsCount = 0;
+}
+
+void VSTInterface::loadSettings() {
+	Common::InSaveFile *s = g_system->getSavefileManager()->openForLoading(getSaveFileName());
+
+	// This needn't be an error. If this a first-time run there won't be a config file.
+	if (!s)
+		return;
+
+	bool failed = (s->readUint32BE() == MKTAG('S', 'V', 'M', ' ')) ? (s->readUint32BE() > VST_SAVE_VERSION): true;
+	if (failed) {
+		delete s;
+		warning ("VSTInterface::loadSettings(): Could not process invalid settings file: '%s'", getSaveFileName());
+		return;
+	}
+
+	if (_defaultSettings != nullptr && _defaultSettingsSize > 0) {
+		uint32 curSettingsSize = s->readUint32BE();
+		assert(curSettingsSize == _defaultSettingsSize);
+		uint8 *curSettings = new uint8[curSettingsSize];
+		s->read(curSettings, curSettingsSize);
+		// We save only xor data against the default settings. With our
+		// compression, this should make very small save files.
+		const uint8 *src = _defaultSettings;
+		uint8 *dst = curSettings;
+		for (uint32 i = 0; i < curSettingsSize; ++i)
+			*dst++ ^= *src++;
+		restoreSettings(curSettings, curSettingsSize);
+		delete[] curSettings;
+	} else if (_defaultParameters && _numDefParameters > 0) {
+		uint32 numParameters = s->readUint32BE();
+		assert(numParameters == _numDefParameters);
+		uint32 *curParameters = new uint32[numParameters];
+		for (uint32 i = 0; i < numParameters; ++i)
+			curParameters[i] = s->readUint32BE();
+		// We save only xor data against the default settings. With our
+		// compression, this should make very small save files.
+		const uint32 *src2 = _defaultParameters;
+		uint32 *dst2 = curParameters;
+		for (uint32 i = 0; i < numParameters; ++i)
+			*dst2++ ^= *src2++;
+		restoreParameters(curParameters, numParameters);
+		delete[] curParameters;
+	}
+	delete s;	
+}
+
+void VSTInterface::saveSettings() {
+	Common::OutSaveFile *s = g_system->getSavefileManager()->openForSaving(getSaveFileName());
+	if (!s)
+		error("VSTInterface::saveSettings(): Unable to create config savefile");
+
+	s->writeUint32BE(MKTAG('S', 'V', 'M', ' '));
+	s->writeUint32BE(VST_SAVE_VERSION);
+
+	if (_defaultSettings != nullptr && _defaultSettingsSize > 0) {
+		uint8 *curSettings = nullptr;
+		uint32 curSettingsSize = getActiveSettings(&curSettings);
+		assert(curSettingsSize == _defaultSettingsSize);
+		// We save only xor data against the default settings. With our
+		// compression, this should make very small save files.
+		const uint8 *src = _defaultSettings;
+		uint8 *dst = curSettings;
+		for (uint32 i = 0; i < curSettingsSize; ++i)
+			*dst++ ^= *src++;
+
+		s->writeUint32BE(curSettingsSize);
+		s->write(curSettings, curSettingsSize);
+		delete[] curSettings;
+	} else if (_defaultParameters && _numDefParameters > 0) {
+		uint32 *curParameters = nullptr;
+		uint32 numParameters = getActiveParameters(&curParameters);
+		assert(numParameters == _numDefParameters);
+		// We save only xor data against the default settings. With our
+		// compression, this should make very small save files.
+		const uint32 *src2 = _defaultParameters;
+		uint32 *dst2 = curParameters;
+		for (uint32 i = 0; i < numParameters; ++i)
+			*dst2++ ^= *src2++;
+
+		s->writeUint32BE(numParameters);
+		for (uint32 i = 0; i < numParameters; ++i)
+			s->writeUint32BE(curParameters[i]);
+		delete[] curParameters;
+	}
+	s->finalize();
+	delete s;
+}
+
+const Common::String VSTInterface::getSaveFileName() const {
+	return ConfMan.getActiveDomainName() + '-' + _pluginName + '.' + getSaveFileExt();
 }
 
 const VST::PluginsSearchResult getSearchResult(const MusicPluginObject *plugin);
@@ -118,5 +227,7 @@ VSTInterface *VSTInterface::create(MidiDriver::DeviceHandle dev) {
 
 	return res;
 }
+
+#undef VST_SAVE_VERSION
 
 #endif
