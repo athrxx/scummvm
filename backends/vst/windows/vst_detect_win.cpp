@@ -77,8 +77,7 @@ const TCHAR *makeFullPath(const TCHAR *p1, const TCHAR *p2, bool appendDirSearch
 
 LPCVOID dllDetectCallback (LPVOID, int32 opcode, ...) {
 	if (opcode == 1)
-		return ConvertType<int>(2400).to<LPCVOID>();
-	warning("detectVSTPlugins: Unexpected opcode '%d' received during detection.", opcode);
+		return ConvertTypeLE<int>(2400).to<LPCVOID>();
 	return 0;
 }
 

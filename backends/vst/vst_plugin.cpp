@@ -104,7 +104,7 @@ namespace VST {
 // Otherwise they will be set to MT_GM, since that is correct in 99% of cases...
 MusicType getPluginMusicType(const char *pluginName) {
 	static const char *mt32TypePlugins[] {
-		"D-50" // This isn't really MT-32 compatible, but probably better than the MT_GM setting
+		"MuntVsti"
 	};
 
 	Common::String testStr(pluginName);
