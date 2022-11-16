@@ -26,11 +26,12 @@
 #define BACKENDS_VSTINTF_H
 
 #include "audio/mididrv.h"
+#include "common/scummsys.h"
 #include "common/memorypool.h"
 
 class VSTInterface {
 protected:
-	VSTInterface();
+	VSTInterface(const Common::String &pluginName);
 public:
 	virtual ~VSTInterface();
 
@@ -51,9 +52,20 @@ protected:
 	struct EvtNode {
 		EvtNode(EvtNode *chain, uint32 msg) : _next(chain), _syx(nullptr), _dat(msg) {}
 		EvtNode(EvtNode *chain, const uint8 *data, uint32 dataSize) : _next(chain), _syx(nullptr), _dat(dataSize) {
-			uint8 *buf = new uint8[dataSize];
+			// Unfortunately, the leading 0xF0 and trailing 0xF7 marker have to be stripped off for
+			// ScummVM. Let's not talk about this "design decision". But we have to add them again...
+			uint32 firstByteExt = 0;
+			uint32 lastByteExt = 0;
+			if (*data != 0xF0)
+				firstByteExt++;
+			if (data[dataSize - 1] != 0xF7)
+				lastByteExt++;
+			_dat += (firstByteExt + lastByteExt);
+			uint8 *buf = new uint8[_dat];
 			assert(buf);
-			memcpy(buf, data, dataSize);
+			memcpy(buf + firstByteExt, data, dataSize);
+			buf[0] = 0xF0;
+			buf[_dat - 1] = 0xF7;
 			_syx = buf;
 		}
 		~EvtNode() {
@@ -68,18 +80,26 @@ protected:
 	EvtNode *_eventsChain;
 	int _eventsCount;
 
+	const Common::String _pluginName;
 	bool _hasEditor;
 
 private:
+	void loadSettings();
+	void saveSettings();
+	const Common::String getSaveFileName() const;
+	virtual const char *getSaveFileExt() const = 0;
+
 	virtual bool startPlugin() = 0;
 	virtual void terminatePlugin() = 0;
-	virtual uint32 readSettings(uint8 **dest) = 0;
-	virtual uint32 readParameters(uint32 **dest) = 0;
+	virtual uint32 getActiveSettings(uint8 **dest) const = 0;
+	virtual void restoreSettings(const uint8 *data, uint32 dataSize) const = 0;
+	virtual uint32 getActiveParameters(uint32 **dest) const = 0;
+	virtual void restoreParameters(const uint32 *data, uint32 numPara) const = 0;
 
-	uint8 *_defaultSettings;
-	uint32 _settingsSize;
-	uint32 *_defaultParameters;
-	uint32 _numParameters;
+	const uint8 *_defaultSettings;
+	uint32 _defaultSettingsSize;
+	const uint32 *_defaultParameters;
+	uint32 _numDefParameters;
 
 public:
 	static VSTInterface *create(MidiDriver::DeviceHandle dev);

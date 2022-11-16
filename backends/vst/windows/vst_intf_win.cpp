@@ -30,18 +30,19 @@
 #include "backends/vst/vst_intf.h"
 #include "backends/vst/windows/vst_plug_win.h"
 
-#include "common/func.h"
+#include "common/rect.h"
 #include "common/scummsys.h"
+#include "common/system.h"
 
 namespace VST {
 
 #define pluginCall(a) if (_op_##a && _op_##a->isValid()) (*_op_##a)
 #define pluginCallRes(a) !(_op_##a && _op_##a->isValid()) ? 0 : (*_op_##a)
-#define pluginCallArgI32(a, val) pluginCall(a)(ConvertType<uint32>(val).to<LPVOID>())
+#define pluginCallArgI32(a, val) pluginCall(a)(ConvertTypeLE<uint32>(val).to<LPVOID>())
 
 class VSTInterface_2X_WIN final : public VSTInterface {
 public:
-	VSTInterface_2X_WIN(const Common::String &pluginPath);
+	VSTInterface_2X_WIN(const Common::String &pluginPath, const Common::String &pluginName);
 	~VSTInterface_2X_WIN() override;
 
 	void setSampleRate(uint32 rate) override;
@@ -53,19 +54,25 @@ private:
 	bool startPlugin() override;
 	void terminatePlugin() override;
 	void midiSendAll();
-	void resume();
-	uint32 readSettings(uint8 **dest) override;
-	uint32 readParameters(uint32 **dest) override;
+
+	void hold() const;
+	void resume() const;
+
+	const char *getSaveFileExt() const override;
+	uint32 getActiveSettings(uint8 **dest) const override;
+	void restoreSettings(const uint8 *data, uint32 dataSize) const override;
+	uint32 getActiveParameters(uint32 **dest) const override;
+	void restoreParameters(const uint32 *data, uint32 numPara) const override;
 
 	HMODULE _plugin;
 	LPVOID _sndWork;
-
 	const uint8 *_msgBuffer;
 
 	uint32 _rate;
 	uint32 _bsize;
 
-	const Common::String _pluginPath;;
+	HWND _hWnd;
+	const Common::String _pluginPath;
 	bool _ready;
 
 private:
@@ -77,27 +84,37 @@ private:
 	V2XFunctor1 *_op_setOnOff;
 	V2XFunctor2 *_op_genSamples;
 	//V2XFunctor1 *_op_getParaDsc;
-	V2XFunctor1 *_op_readPara;
-	V2XFunctor1 *_op_writePara;
+	V2XFunctor3 *_op_readPara;
+	V2XFunctor4 *_op_writePara;
 	V2XFunctor1 *_op_readSettings;
 	V2XFunctor1 *_op_writeSettings;
-	V2XFunctor1 *_op_runEditor;
+	V2XFunctor1 *_op_editStart;
+	V2XFunctor1 *_op_editQuit;
+	V2XFunctor1 *_op_editWinSize;
+	V2XFunctor1 *_op_editTmrUpdt;
+
+	Common::Array<V2XFunctor1*> _wndProcs;
 
 	static LPCVOID dllCallback(LPVOID, int32 opcode, ...);
 };
 
 static const char *_pluginFolder = nullptr;
+TCHAR winTitle[0x100];
 
-VSTInterface_2X_WIN::VSTInterface_2X_WIN(const Common::String &pluginPath) : VSTInterface(), _pluginPath(pluginPath), _plugin(nullptr), _sndWork(nullptr), _ready(false),
+VSTInterface_2X_WIN::VSTInterface_2X_WIN(const Common::String &pluginPath, const Common::String &pluginName) : VSTInterface(pluginName), _pluginPath(pluginPath), _plugin(nullptr), _sndWork(nullptr), _ready(false),
 	_bsize(0), _op_close(nullptr), _op_stop(nullptr), _op_setRate(nullptr), _op_setBSize(nullptr), _op_sendMsg(nullptr), _op_setOnOff(nullptr), _op_genSamples(nullptr),
-	/*_op_getParaDsc, */_op_readPara(nullptr), _op_writePara(nullptr), _op_readSettings(nullptr), _op_writeSettings(nullptr), _op_runEditor(nullptr), _msgBuffer(nullptr),
-	_rate(0) {
+	/*_op_getParaDsc, */_op_readPara(nullptr), _op_writePara(nullptr), _op_readSettings(nullptr), _op_writeSettings(nullptr), _op_editStart(nullptr), _op_editQuit(nullptr),
+	_op_editWinSize(nullptr), _op_editTmrUpdt(nullptr), _msgBuffer(nullptr), _hWnd(nullptr), _rate(0) {
 
 	Common::String folder = _pluginPath.substr(0, _pluginPath.findLastOf('\\'));
 	char *folderStr = new char[folder.size() + 1];
 	assert(folderStr);
 	Common::strlcpy(folderStr, folder.c_str(), folder.size() + 1);
 	_pluginFolder = folderStr;
+
+	TCHAR *title = Win32::stringToTchar(_pluginName + " Setup");
+	_tcsncpy_s(winTitle, ARRAYSIZE(winTitle), title, _pluginName.size() + 6);
+	free(title);
 }
 
 VSTInterface_2X_WIN::~VSTInterface_2X_WIN() {
@@ -131,25 +148,76 @@ void VSTInterface_2X_WIN::generateSamples(float **in, float **out, uint32 len) {
 	clearChain();
 }
 
-LRESULT eproc(HWND hWnd, UINT mg, WPARAM w, LPARAM l) {
-	MSG m;
+LRESULT CALLBACK confWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	Common::Array<V2XFunctor1*> *procs = nullptr;
 
-/*	while (GetMessage(&m, NULL, 0, 0) > 0) {
-		TranslateMessage(&m);
-		DispatchMessage(&m);
+	switch (uMsg) {
+	case WM_CREATE:
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, *reinterpret_cast<LONG_PTR*>(lParam));
+		SetTimer(hWnd, 1, 16, NULL);
+		break;
+	case WM_DESTROY:
+		procs = reinterpret_cast<Common::Array<V2XFunctor1*>*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+		if (procs && (*procs)[0]->isValid()) {
+			(*(*procs)[0])();
+			SetWindowLongPtr(hWnd, GWLP_USERDATA, 0);
+			KillTimer(hWnd, 1);
+		}
+		break;
+	case WM_TIMER:
+		procs = reinterpret_cast<Common::Array<V2XFunctor1*>*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+		if (procs && (*procs)[1]->isValid())
+			(*(*procs)[1])();
+		break;
+	default:
+		return DefWindowProc(hWnd, uMsg, wParam, lParam);
+		break;
 	}
-	*/
+
 	return 0;
 }
 
-void VSTInterface_2X_WIN::runEditor() {
-	TCHAR wname[] = _T("Sound Plugin Config");
-	WNDCLASS wcl = { 0, &eproc, 0, 0, GetModuleHandle(NULL), nullptr, nullptr, nullptr, _T(""), wname };
-	RegisterClass(&wcl);
-	HWND hWnd =	CreateWindow(wname, wname,  WS_OVERLAPPEDWINDOW, 100, 100, 1000, 1000, NULL, NULL, GetModuleHandle(NULL), NULL);
-	ShowWindow(hWnd, WM_SHOWWINDOW);
+void adjustWindow(HWND hwnd, int x1, int y1, int x2, int y2) {
+#ifdef _DPI_AWARENESS_CONTEXTS_
+	DPI_AWARENESS_CONTEXT oldDpiAC = SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED);
+#endif
+	RECT wr = { x1, y1, x2, y2 };
+	AdjustWindowRectEx(&wr, GetWindowLong(hwnd, GWL_STYLE), FALSE, GetWindowLong(hwnd, GWL_EXSTYLE));
+	SetWindowPos(hwnd, HWND_TOP, 0, 0, wr.right - wr.left - 1, wr.bottom - wr.top - 1, SWP_NOMOVE);
+	ShowWindow(hwnd, SW_SHOWNORMAL);
+	UpdateWindow(hwnd);
+#ifdef _DPI_AWARENESS_CONTEXTS_
+	SetThreadDpiAwarenessContext(oldDpiAC);
+#endif
+}
 
-	pluginCall(runEditor)(hWnd);
+void VSTInterface_2X_WIN::runEditor() {
+	if (!_ready)
+		return;
+
+	TCHAR wname[] = _T("SndPluginConfClss");
+	HMODULE mdl = GetModuleHandle(nullptr);
+	HICON icn =  LoadIcon(mdl, MAKEINTRESOURCE(1001 /* IDI_ICON */));
+	WNDCLASSEX wcl = { sizeof(WNDCLASSEX), 0,  &confWndProc, 0, 0, mdl, icn, LoadCursor(mdl, IDC_ARROW), (HBRUSH)(COLOR_WINDOW+1), nullptr, wname, icn };
+	RegisterClassEx(&wcl);
+
+#ifdef _DPI_AWARENESS_CONTEXTS_
+	DPI_AWARENESS_CONTEXT oldDpiAC = SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED);
+#endif
+
+	_hWnd =	CreateWindowEx(WS_EX_CLIENTEDGE, wname, winTitle, WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, mdl, &_wndProcs);
+	
+	pluginCall(editStart)(_hWnd);
+
+	uint16 *rect = 0;
+	pluginCall(editWinSize)(&rect);
+
+	if (rect)
+		adjustWindow(_hWnd, rect[1], rect[0], rect[3], rect[2]);
+
+#ifdef _DPI_AWARENESS_CONTEXTS_
+	SetThreadDpiAwarenessContext(oldDpiAC);
+#endif
 }
 
 bool VSTInterface_2X_WIN::startPlugin() {
@@ -180,16 +248,25 @@ bool VSTInterface_2X_WIN::startPlugin() {
 	assert(_op_setOnOff);
 	//_op_getParaDsc = new V2XFunctor1(_sndWork, 8, 5);
 	//assert(_op_getParaDsc);
-	_op_readPara = new V2XFunctor1(_sndWork, 14, 4);
+	_op_readPara = new V2XFunctor3(_sndWork, 4, 0);
 	assert(_op_readPara);
-	_op_writePara = new V2XFunctor1(_sndWork, 14, 4);
+	_op_writePara = new V2XFunctor4(_sndWork, 3, 0);
 	assert(_op_writePara);
 	_op_readSettings = new V2XFunctor1(_sndWork, 23, 4);
 	assert(_op_readSettings);
-	_op_writeSettings = new V2XFunctor1(_sndWork, 24, 5);
+	_op_writeSettings = new V2XFunctor1(_sndWork, 24, 6);
 	assert(_op_writeSettings);
-	_op_runEditor = new V2XFunctor1(_sndWork, 14, 4);
-	assert(_op_runEditor);
+	_op_editStart = new V2XFunctor1(_sndWork, 14, 4);
+	assert(_op_editStart);
+	_op_editQuit = new V2XFunctor1(_sndWork, 15, 0);
+	assert(_op_editQuit);
+	_op_editWinSize = new V2XFunctor1(_sndWork, 13, 4);
+	assert(_op_editWinSize);
+	_op_editTmrUpdt = new V2XFunctor1(_sndWork, 19, 0);
+	assert(_op_editTmrUpdt);
+
+	_wndProcs.push_back(_op_editQuit);
+	_wndProcs.push_back(_op_editTmrUpdt);
 
 	_op_genSamples = new V2XFunctor2(_sndWork, 10, 10);
 	assert(_op_genSamples);
@@ -199,14 +276,6 @@ bool VSTInterface_2X_WIN::startPlugin() {
 		_op_genSamples = new V2XFunctor2(_sndWork, 2, 0);
 		assert(_op_genSamples);
 	}
-
-	/*char dsc[64] = "";
-	for (int i = 0; i < _numPara; ++i) {
-		pluginCall(getParaDsc)(i, dsc);
-		if (dsc[0] == '\0')
-			break;
-		warning("Parameter No. %d: '%s'", i, dsc);
-	}*/
 
 	// We need these only here. No need to keep them afterwards...
 	V2XFunctor1 op_open(_sndWork, 0, 0);
@@ -232,6 +301,10 @@ void VSTInterface_2X_WIN::terminatePlugin() {
 
 	if (!_plugin)
 		return;
+
+	if (_hWnd && GetWindowLongPtr(_hWnd, GWLP_USERDATA))
+		DestroyWindow(_hWnd);
+	_hWnd = nullptr;
 
 	pluginCall(stop)();
 	pluginCall(close)();
@@ -263,10 +336,16 @@ void VSTInterface_2X_WIN::terminatePlugin() {
 	_op_readSettings = nullptr;
 	delete _op_writeSettings;
 	_op_writeSettings = nullptr;
-	delete _op_runEditor;
-	_op_runEditor = nullptr;
 	delete _op_genSamples;
 	_op_genSamples = nullptr;
+	delete _op_editStart;
+	_op_editStart = nullptr;
+	delete _op_editQuit;
+	_op_editQuit = nullptr;
+	delete _op_editWinSize;
+	_op_editWinSize = nullptr;
+	delete _op_editTmrUpdt;
+	_op_editTmrUpdt = nullptr;
 }
 
 void VSTInterface_2X_WIN::midiSendAll() {
@@ -277,15 +356,15 @@ void VSTInterface_2X_WIN::midiSendAll() {
 	uint32 buffSize = _eventsCount * (48 + sizeof(LPVOID)) + 3 * sizeof(LPVOID);
 	uint8 *buff = new uint8[buffSize];
 	memset(buff, 0, buffSize);
-	const uint8 *package = &buff[_eventsCount * 48];
-	const uint8 **table = &((const uint8**)package)[_eventsCount + 1];
+	uint8 *package = &buff[_eventsCount * 48];
+	const uint8 **table = &(reinterpret_cast<const uint8**>(package))[_eventsCount + 1];
 	uint8 *pos = buff;
 
 	for (EvtNode *e = _eventsChain; e; e = e->_next) {
 		if (e->_syx) {
 			pos[0] = 6;
 			pos[4] = (4 + sizeof(LPVOID)) << 2;
-			*(const uint8**)&pos[(8 + sizeof(LPVOID)) << 1] = e->_syx;
+			*(reinterpret_cast<const uint8**>(&pos[(8 + sizeof(LPVOID)) << 1])) = e->_syx;
 			WRITE_UINT32(&pos[16], e->_dat);
 		} else {
 			pos[0] = pos[12] = 1;
@@ -303,24 +382,48 @@ void VSTInterface_2X_WIN::midiSendAll() {
 	_msgBuffer = buff;
 }
 
-void VSTInterface_2X_WIN::resume() {
+const char *VSTInterface_2X_WIN::getSaveFileExt() const {
+	return "w2x";
+}
+
+void VSTInterface_2X_WIN::hold() const {
+	pluginCallArgI32(setOnOff, 0);
+}
+
+void VSTInterface_2X_WIN::resume() const {
 	pluginCallArgI32(setOnOff, 1);
 }
 
-uint32 VSTInterface_2X_WIN::readSettings(uint8 **dest) {
+uint32 VSTInterface_2X_WIN::getActiveSettings(uint8 **dest) const {
+	const uint8 *plgSettings = nullptr;
 	*dest = nullptr;
 	if (!_ready)
 		return 0;
 
 	uint32 size = 0;
-	if (plgProps(_sndWork, 4) & 0x20)
-		size = pluginCallRes(readSettings)(dest);
+	if (plgProps(_sndWork, 4) & 0x20) {
+		hold();
+		size = pluginCallRes(readSettings)(&plgSettings);
+		resume();
+		uint8 *st = new uint8[size];
+		memcpy(st, plgSettings, size);
+		*dest = st;
+	}
 
 	return size;
 }
 
-uint32 VSTInterface_2X_WIN::readParameters(uint32 **dest) {
-	*dest = nullptr;
+void VSTInterface_2X_WIN::restoreSettings(const uint8 *data, uint32 dataSize) const {
+	if (!_ready || !data || !dataSize)
+		return;
+	hold();
+	pluginCall(writeSettings)(ConvertTypeLE<uint32>(dataSize).to<LPVOID>(), data);
+	resume();
+}
+
+uint32 VSTInterface_2X_WIN::getActiveParameters(uint32 **dest) const {
+	if (dest)
+		*dest = nullptr;
 
 	if (!_ready)
 		return 0;
@@ -329,40 +432,130 @@ uint32 VSTInterface_2X_WIN::readParameters(uint32 **dest) {
 	if (!num)
 		return 0;
 
-	*dest = new uint32[num];
+	uint32 *res = new uint32[num]();
 
+	hold();
 	for (uint32 i = 0; i < num; ++i)
-	{}
+		res[i] = pluginCallRes(readPara)(i);
+	resume();
+
+	if (dest)
+		*dest = res;	
 
 	return num;
 }
+
+void VSTInterface_2X_WIN::restoreParameters(const uint32 *data, uint32 numPara) const {
+	//if (!_ready || !data || !numPara)
+		return;
+	hold();
+	for (uint32 i = 0; i < numPara; ++i)
+		pluginCall(writePara)(i, data[i]);
+	resume();
+}
+
+struct VstTimeInfo
+{
+	//-------------------------------------------------------------------------------------------------------
+	double samplePos;				///< current Position in audio samples (always valid)
+	double sampleRate;				///< current Sample Rate in Herz (always valid)
+	double nanoSeconds;				///< System Time in nanoseconds (10^-9 second)
+	double ppqPos;					///< Musical Position, in Quarter Note (1.0 equals 1 Quarter Note)
+	double tempo;					///< current Tempo in BPM (Beats Per Minute)
+	double barStartPos;				///< last Bar Start Position, in Quarter Note
+	double cycleStartPos;			///< Cycle Start (left locator), in Quarter Note
+	double cycleEndPos;				///< Cycle End (right locator), in Quarter Note
+	uint32 timeSigNumerator;		///< Time Signature Numerator (e.g. 3 for 3/4)
+	uint32 timeSigDenominator;	///< Time Signature Denominator (e.g. 4 for 3/4)
+	uint32 smpteOffset;			///< SMPTE offset (in SMPTE subframes (bits; 1/80 of a frame)). The current SMPTE position can be calculated using #samplePos, #sampleRate, and #smpteFrameRate.
+	uint32 smpteFrameRate;		///< @see VstSmpteFrameRate
+	uint32 samplesToNextClock;	///< MIDI Clock Resolution (24 Per Quarter Note), can be negative (nearest clock)
+	uint32 flags;					///< @see VstTimeInfoFlags
+	//-------------------------------------------------------------------------------------------------------
+};
+
+static VstTimeInfo info = {};
+
 
 LPCVOID VSTInterface_2X_WIN::dllCallback(LPVOID, int32 opcode, ...) {
 	va_list arg;
 	va_start(arg, opcode);
 	LPCVOID res = nullptr;
+	HWND hWnd = FindWindow(_T("SndPluginConfClss"), winTitle);
+
+	struct VstTimeInfo
+	{
+		//-------------------------------------------------------------------------------------------------------
+		double samplePos;				///< current Position in audio samples (always valid)
+		double sampleRate;				///< current Sample Rate in Herz (always valid)
+		double nanoSeconds;				///< System Time in nanoseconds (10^-9 second)
+		double ppqPos;					///< Musical Position, in Quarter Note (1.0 equals 1 Quarter Note)
+		double tempo;					///< current Tempo in BPM (Beats Per Minute)
+		double barStartPos;				///< last Bar Start Position, in Quarter Note
+		double cycleStartPos;			///< Cycle Start (left locator), in Quarter Note
+		double cycleEndPos;				///< Cycle End (right locator), in Quarter Note
+		uint32 timeSigNumerator;		///< Time Signature Numerator (e.g. 3 for 3/4)
+		uint32 timeSigDenominator;	///< Time Signature Denominator (e.g. 4 for 3/4)
+		uint32 smpteOffset;			///< SMPTE offset (in SMPTE subframes (bits; 1/80 of a frame)). The current SMPTE position can be calculated using #samplePos, #sampleRate, and #smpteFrameRate.
+		uint32 smpteFrameRate;		///< @see VstSmpteFrameRate
+		uint32 samplesToNextClock;	///< MIDI Clock Resolution (24 Per Quarter Note), can be negative (nearest clock)
+		uint32 flags;					///< @see VstTimeInfoFlags
+		//-------------------------------------------------------------------------------------------------------
+	};
+	
+
+	info = { 0.0, 48000.0, (double)(g_system->getMillis() * 1000), 2.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0xFF03 };
+	enum VstTimeInfoFlags
+	{
+		//-------------------------------------------------------------------------------------------------------
+		kVstTransportChanged     = 1,		///< indicates that play, cycle or record state has changed
+		kVstTransportPlaying     = 1 << 1,	///< set if Host sequencer is currently playing
+		kVstTransportCycleActive = 1 << 2,	///< set if Host sequencer is in cycle mode
+		kVstTransportRecording   = 1 << 3,	///< set if Host sequencer is in record mode
+		kVstAutomationWriting    = 1 << 6,	///< set if automation write mode active (record parameter changes)
+		kVstAutomationReading    = 1 << 7,	///< set if automation read mode active (play parameter changes)
+		kVstNanosValid           = 1 << 8,	///< VstTimeInfo::nanoSeconds valid
+		kVstPpqPosValid          = 1 << 9,	///< VstTimeInfo::ppqPos valid
+		kVstTempoValid           = 1 << 10,	///< VstTimeInfo::tempo valid
+		kVstBarsValid            = 1 << 11,	///< VstTimeInfo::barStartPos valid
+		kVstCyclePosValid        = 1 << 12,	///< VstTimeInfo::cycleStartPos and VstTimeInfo::cycleEndPos valid
+		kVstTimeSigValid         = 1 << 13,	///< VstTimeInfo::timeSigNumerator and VstTimeInfo::timeSigDenominator valid
+		kVstSmpteValid           = 1 << 14,	///< VstTimeInfo::smpteOffset and VstTimeInfo::smpteFrameRate valid
+		kVstClockValid           = 1 << 15	///< VstTimeInfo::samplesToNextClock valid
+		//-------------------------------------------------------------------------------------------------------
+	};
+
+	
 
 	switch (opcode) {
-	case 0: {
-		int i1 = va_arg(arg, int);
-		int32 i2 = va_arg(arg, int32);
-		LPVOID i3 = va_arg(arg, LPVOID);
-		float i4 = va_arg(arg, float);
-		bool ggg=true; 
-	}
+	case 0:
 		break;
 	case 1:
-		res = ConvertType<uint32>(2400).to<LPCVOID>();
+		res = ConvertTypeLE<uint32>(2400).to<LPCVOID>();
 		break;
 	case 6:
 		break;
-	case 7:
+	case 7: {
+		va_arg(arg, uint32);
+		uint32 m = va_arg(arg, uint32);
+		return &info;
+	}
+		break;
+	case 15: {
+		int w = va_arg(arg, int);
+		int h = va_arg(arg, int);
+		adjustWindow(hWnd, 0, 0, w, h);
+		res = ConvertTypeLE<uint32>(1).to<LPCVOID>();
+	}
 		break;
 	case 23:
-		res = ConvertType<uint32>(2).to<LPCVOID>();
+		res = ConvertTypeLE<uint32>(2).to<LPCVOID>();
 		break;
 	case 41:
 		res = _pluginFolder;
+		break;
+	case 42:
+		UpdateWindow(hWnd);
 		break;
 	default:
 		warning("VSTInterface_2X_WIN::dllCallback(): Unsupported opcode '%d'", opcode);
@@ -373,41 +566,107 @@ LPCVOID VSTInterface_2X_WIN::dllCallback(LPVOID, int32 opcode, ...) {
 	return res;
 }
 
-/*
-class VSTInterface_30_WIN final : public VSTInterface {
+class VSTInterface_3X_WIN final : public VSTInterface {
 public:
-	VSTInterface_30_WIN(const Common::String &pluginPath);
-	~VSTInterface_30_WIN() override;
+	VSTInterface_3X_WIN(const Common::String &pluginPath, const Common::String &pluginName);
+	~VSTInterface_3X_WIN() override;
+
+	void setSampleRate(uint32 rate) override;
+	void setBlockSize(uint32 bsize) override;
+	void generateSamples(float **in, float **out, uint32 len) override;
+	void runEditor() override;
 
 private:
+	bool startPlugin() override;
+	void terminatePlugin() override;
+
+	const char *getSaveFileExt() const override;
+	uint32 getActiveSettings(uint8 **dest) const override;
+	void restoreSettings(const uint8 *data, uint32 dataSize) const override;
+	uint32 getActiveParameters(uint32 **dest) const override;
+	void restoreParameters(const uint32 *data, uint32 numPara) const override;
+
 	Common::String _pluginPath;
 	bool _ready;
 };
 
-VSTInterface_30_WIN::VSTInterface_30_WIN(const Common::String &pluginPath) : VSTInterface(), _pluginPath(pluginPath), _ready(false) {
+void VSTInterface_3X_WIN::setSampleRate(uint32 rate) {
 
 }
 
-VSTInterface_30_WIN::~VSTInterface_30_WIN() {
+void VSTInterface_3X_WIN::setBlockSize(uint32 bsize) {
 
 }
 
-bool VSTInterface_30_WIN::loadPlugin() {
+void VSTInterface_3X_WIN::generateSamples(float **in, float **out, uint32 len) {
 
 }
 
-void VSTInterface_30_WIN::unloadPlugin() {
+void VSTInterface_3X_WIN::runEditor() {
 
 }
 
-*/
+VSTInterface_3X_WIN::VSTInterface_3X_WIN(const Common::String &pluginPath, const Common::String &pluginName) : VSTInterface(pluginName), _pluginPath(pluginPath), _ready(false) {
+
+}
+
+VSTInterface_3X_WIN::~VSTInterface_3X_WIN() {
+
+}
+
+bool VSTInterface_3X_WIN::startPlugin() {
+
+	return true;
+}
+
+void VSTInterface_3X_WIN::terminatePlugin() {
+
+}
+
+const char *VSTInterface_3X_WIN::getSaveFileExt() const {
+	return "w3x";
+}
+
+
+uint32 VSTInterface_3X_WIN::getActiveSettings(uint8 **dest) const {
+	const uint8 *plgSettings = nullptr;
+	*dest = nullptr;
+	if (!_ready)
+		return 0;
+
+	uint32 size = 0;
+
+	return size;
+}
+
+void VSTInterface_3X_WIN::restoreSettings(const uint8 *data, uint32 dataSize) const {
+
+}
+
+uint32 VSTInterface_3X_WIN::getActiveParameters(uint32 **dest) const {
+	if (dest)
+		*dest = nullptr;
+
+	if (!_ready)
+		return 0;
+
+	uint32 num = 0;
+	if (!num)
+		return 0;
+
+	return num;
+}
+
+void VSTInterface_3X_WIN::restoreParameters(const uint32 *data, uint32 numPara) const {
+
+}
 
 VSTInterface *VSTInterface_WIN_create(const PluginInfo *target) {
 	VSTInterface *res = nullptr;
-	if (target->version == 3000)
-		res = nullptr; /*new VSTInterface_30_WIN(target->path);*/
+	if (target->version >= 3000)
+		res = new VSTInterface_3X_WIN(target->path, target->name);
 	else if (target->version >= 2000)
-		res = new VSTInterface_2X_WIN(target->path);
+		res = new VSTInterface_2X_WIN(target->path, target->name);
 	else
 		error("VSTInterface_WIN_create(): Unsupported version %d for VST plugin '%s'", target->version, target->name.c_str());
 

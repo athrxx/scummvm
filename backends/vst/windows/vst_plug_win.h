@@ -37,11 +37,13 @@ namespace VST {
 
 #define V2XFunctor1 V2XDLLFunctorEx<1, 0, int, int32, LPVOID, LPVOID, float>
 #define V2XFunctor2 V2XDLLFunctor<void, float**, float**, uint32>
+#define V2XFunctor3 V2XDLLFunctor<uint32, uint32>
+#define V2XFunctor4 V2XDLLFunctor<void, uint32, uint32>
 
-template <typename T_IN> struct ConvertType {
-	ConvertType(T_IN arg) : _data(static_cast<LPCVOID>(&arg)) {}
-	template <typename T_OUT> T_OUT to() const { return *(static_cast<const T_OUT*>(_data)); }
-	LPCVOID _data;
+template <typename T_IN> struct ConvertTypeLE {
+	ConvertTypeLE(T_IN arg) : _data(nullptr), _data2(&_data) { *reinterpret_cast<T_IN*>(&_data) = arg; }
+	template <typename T_OUT> T_OUT to() const { return *(static_cast<const T_OUT*>(_data2)); }
+	LPCVOID _data, _data2;
 };
 
 template <typename RET, typename... TA> class V2XDLLFunctorBase {
@@ -144,12 +146,12 @@ public:
 
 		va_end(arglst);
 
-		return ConvertType<LPCVOID>(_proc(_sndWork, _opcode, a, b, c, d)).to<RET>();
+		return ConvertTypeLE<LPCVOID>(_proc(_sndWork, _opcode, a, b, c, d)).to<RET>();
 	}
 
 	RET operator()() {
 		assert(_usageFlags == 0);
-		return ConvertType<LPCVOID>(_proc(_sndWork, _opcode, 0, 0, 0, 0)).to<RET>();
+		return ConvertTypeLE<LPCVOID>(_proc(_sndWork, _opcode, 0, 0, 0, 0)).to<RET>();
 	}
 
 private:
