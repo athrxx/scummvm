@@ -48,6 +48,7 @@ public:
 	uint32 getBaseTempo() override { return _drv ? _drv->getBaseTempo() : 0; }
 	void send(uint32 b) override { if (_drv && trackMidiState(b)) _drv->send(b); };
 	void sysEx(const byte *msg, uint16 length) override { if (_drv) _drv->sysEx(msg, length); }
+	void metaEvent(byte type, byte *data, uint16 len) override { if (_drv) _drv->metaEvent(type, data, len); }
 	virtual void setPitchBendRange(byte channel, uint range) override { if (_drv) _drv->setPitchBendRange(channel, range); }
 
 	// Channel allocation functions

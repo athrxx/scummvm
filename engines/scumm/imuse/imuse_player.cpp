@@ -1091,6 +1091,8 @@ void Player::fixAfterLoad() {
 void Player::metaEvent(byte type, const byte *msg, uint16 len) {
 	if (type == 0x2F)
 		clear();
+	if (type == 0x51 && _midi != nullptr)
+		_midi->metaEvent(type, msg, len);
 }
 
 
