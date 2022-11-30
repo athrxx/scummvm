@@ -309,6 +309,7 @@ public:
 		_screenPosition.y = in->readSint16LE();
 		_screenDepth = in->readSint32LE();
 		_screenScale = in->readSint32LE();
+		debug ("Loading object nameIndex %d, screenPos.x %d, screenPos.y %d", _nameIndex, _screenPosition.x, _screenPosition.y);
 	}
 
 	CommonObjectData() {

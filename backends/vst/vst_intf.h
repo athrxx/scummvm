@@ -40,9 +40,10 @@ public:
 
 	virtual void setSampleRate(uint32 rate) = 0;
 	virtual void setBlockSize(uint32 bsize) = 0;
+	void setTempo(uint32 bpm);
 	void send(uint32 msg);
 	void sysex(const uint8 *msg, uint32 len);
-	virtual void generateSamples(float **in, float **out, uint32 len) = 0;
+	virtual void generateSamples(float **in, float **out, uint32 len, uint32 smpPos) = 0;
 	bool hasEditor() { return _hasEditor; }
 	virtual void runEditor() = 0;
 
