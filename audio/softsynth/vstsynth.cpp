@@ -39,13 +39,16 @@ public:
 };
 
 VSTMidiDriver::VSTMidiDriver(DeviceHandle dev, Audio::Mixer *mixer) : MidiDriver_Emulated(mixer), _device(dev), _outputRate(mixer ? mixer->getOutputRate() : 0),
-	_channels(nullptr), _numChannels(16), _intf(nullptr), _outputData(nullptr), _nullBuffer(nullptr), _outputDataSize(0) {
+	_channels(nullptr), _numChannels(16), _intf(nullptr), _outputData(nullptr), _nullBuffer(nullptr), _outputDataSize(0), _spc(0), _spcr(0), _ssc(0), _sscr(0) {
 	assert(mixer);
 
 	_channels = new VSTMidiChannel*[_numChannels];
 	assert(_channels);
 	for (int i = 0; i < _numChannels; ++i)
 		_channels[i] = new VSTMidiChannel(this, i);
+
+	_spc = _outputRate / 250;
+	_spcr = _outputRate % 250;
 }
 
 VSTMidiDriver::~VSTMidiDriver() {
@@ -69,6 +72,7 @@ int VSTMidiDriver::open() {
 		return MERR_DEVICE_NOT_AVAILABLE;
 
 	_intf->setSampleRate(_mixer->getOutputRate());
+	_intf->setTempo(500000);
 
 	if (_intf->open())
 		return MERR_CANNOT_CONNECT;
@@ -106,6 +110,12 @@ void VSTMidiDriver::sysEx(const byte *msg, uint16 length) {
 	_intf->sysex(msg, length);
 }
 
+void VSTMidiDriver::metaEvent(byte type, byte *data, uint16 len) {
+	if (!isOpen() || type != 0x51 || len != 3)
+		return;
+	_intf->setTempo(data[0] << 16 | data[1] << 8 | data[2]);
+}
+
 MidiChannel *VSTMidiDriver::allocateChannel() {
 	for (int i = 0; i < _numChannels; ++i) {
 		if (i != 9 && _channels[i]->allocate())
@@ -136,9 +146,18 @@ void VSTMidiDriver::generateSamples(int16 *buf, int len) {
 	}
 
 	float *dest[2] = { _outputData, &_outputData[len] };
-	float *dummySrc[2] = { _nullBuffer, &_nullBuffer[len] };	
+	float *dummySrc[2] = { _nullBuffer, &_nullBuffer[len] };
 
-	_intf->generateSamples(dummySrc, dest, len);
+	_intf->generateSamples(dummySrc, dest, len, _spc - _ssc);
+
+	uint32 rOffs = 0;
+	if ((_sscr += _spcr) >= 250) {
+		_sscr -= 250;
+		rOffs = 1;
+	}
+
+	if ((_ssc += len) >= _spc + rOffs)
+		_ssc = 0;
 
 	const float *s1 = dest[0];
 	const float *s2 = dest[1];

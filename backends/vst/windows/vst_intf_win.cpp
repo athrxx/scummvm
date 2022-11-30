@@ -30,7 +30,6 @@
 #include "backends/vst/vst_intf.h"
 #include "backends/vst/windows/vst_plug_win.h"
 
-#include "common/rect.h"
 #include "common/scummsys.h"
 #include "common/system.h"
 
@@ -47,7 +46,7 @@ public:
 
 	void setSampleRate(uint32 rate) override;
 	void setBlockSize(uint32 bsize) override;
-	void generateSamples(float **in, float **out, uint32 len) override;
+	void generateSamples(float **in, float **out, uint32 len, uint32 smpPos) override;
 	void runEditor() override;
 
 private:
@@ -140,16 +139,19 @@ void VSTInterface_2X_WIN::setBlockSize(uint32 bsize) {
 	resume();
 }
 
-void VSTInterface_2X_WIN::generateSamples(float **in, float **out, uint32 len) {
+static uint32 _smpPos = 0;
+
+void VSTInterface_2X_WIN::generateSamples(float **in, float **out, uint32 len, uint32 smpPos) {
 	if (!_ready)
 		return;
+	_smpPos = smpPos;
 	midiSendAll();
 	pluginCall(genSamples)(in, out, len);
 	clearChain();
 }
 
 LRESULT CALLBACK confWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	Common::Array<V2XFunctor1*> *procs = nullptr;
+	Common::Array<V2XFunctor1*> *plgFunc = reinterpret_cast<Common::Array<V2XFunctor1*>*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
 	switch (uMsg) {
 	case WM_CREATE:
@@ -157,19 +159,17 @@ LRESULT CALLBACK confWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		SetTimer(hWnd, 1, 16, NULL);
 		break;
 	case WM_DESTROY:
-		procs = reinterpret_cast<Common::Array<V2XFunctor1*>*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-		if (procs && (*procs)[0]->isValid()) {
-			(*(*procs)[0])();
+		if (plgFunc && (*plgFunc)[0]->isValid()) {
+			(*(*plgFunc)[0])();
 			SetWindowLongPtr(hWnd, GWLP_USERDATA, 0);
 			KillTimer(hWnd, 1);
 		}
 		break;
 	case WM_TIMER:
-		procs = reinterpret_cast<Common::Array<V2XFunctor1*>*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-		if (procs && (*procs)[1]->isValid())
-			(*(*procs)[1])();
+		if (plgFunc && (*plgFunc)[1]->isValid())
+			(*(*plgFunc)[1])();
 		break;
-	default:
+	default: 
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 		break;
 	}
@@ -348,6 +348,8 @@ void VSTInterface_2X_WIN::terminatePlugin() {
 	_op_editTmrUpdt = nullptr;
 }
 
+static float _tempo = 120.0f;
+
 void VSTInterface_2X_WIN::midiSendAll() {
 	if (!_ready || !_eventsCount)
 		return;
@@ -366,6 +368,8 @@ void VSTInterface_2X_WIN::midiSendAll() {
 			pos[4] = (4 + sizeof(LPVOID)) << 2;
 			*(reinterpret_cast<const uint8**>(&pos[(8 + sizeof(LPVOID)) << 1])) = e->_syx;
 			WRITE_UINT32(&pos[16], e->_dat);
+		} else if ((e->_dat & 0xFF) == 0xFF) {
+			_tempo = 60000000.0f / (float)(e->_dat >> 8);
 		} else {
 			pos[0] = pos[12] = 1;
 			pos[4] = 0x20;
@@ -502,9 +506,17 @@ LPCVOID VSTInterface_2X_WIN::dllCallback(LPVOID, int32 opcode, ...) {
 		uint32 flags;					///< @see VstTimeInfoFlags
 		//-------------------------------------------------------------------------------------------------------
 	};
-	
 
-	info = { 0.0, 48000.0, (double)(g_system->getMillis() * 1000), 2.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0xFF03 };
+	uint32 rate = 48000;
+	uint32 d = rate / 250;
+	uint32 r = rate % 250;
+
+	// This is equivalent to (getRate() << FIXP_SHIFT) / BASE_FREQ
+	// but less prone to arithmetic overflow.
+
+	uint32 samplesPerTick = (d << 16) + (r << 16) / 250;
+
+	info = { 0.0, (double)rate, (double)g_system->getMillis() * 1000000.0, 0.0, (double)_tempo, 0.0, 0.0, 0.0, 1, 1, 0, 0, _smpPos, 0x8f02 };
 	enum VstTimeInfoFlags
 	{
 		//-------------------------------------------------------------------------------------------------------
@@ -536,7 +548,7 @@ LPCVOID VSTInterface_2X_WIN::dllCallback(LPVOID, int32 opcode, ...) {
 	case 6:
 		break;
 	case 7: {
-		va_arg(arg, uint32);
+		uint32 a = va_arg(arg, uint32);
 		uint32 m = va_arg(arg, uint32);
 		return &info;
 	}
@@ -573,7 +585,7 @@ public:
 
 	void setSampleRate(uint32 rate) override;
 	void setBlockSize(uint32 bsize) override;
-	void generateSamples(float **in, float **out, uint32 len) override;
+	void generateSamples(float **in, float **out, uint32 len, uint32 smpPos) override;
 	void runEditor() override;
 
 private:
@@ -598,7 +610,7 @@ void VSTInterface_3X_WIN::setBlockSize(uint32 bsize) {
 
 }
 
-void VSTInterface_3X_WIN::generateSamples(float **in, float **out, uint32 len) {
+void VSTInterface_3X_WIN::generateSamples(float **in, float **out, uint32 len, uint32 smpPos) {
 
 }
 
