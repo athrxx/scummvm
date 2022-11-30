@@ -40,7 +40,6 @@ VSTInterface *VSTInterface_MAC_create(const PluginInfo *target) { /*TODO*/ retur
 #endif
 } // end of namespace VST
 
-
 VSTInterface::VSTInterface(const Common::String &pluginName) : _pluginName(pluginName), _eventsChain(nullptr), _eventsCount(0), _defaultSettings(nullptr), _defaultSettingsSize(0), _defaultParameters(nullptr), _numDefParameters(0) {
 }
 
@@ -80,6 +79,11 @@ void VSTInterface::close() {
 	_numDefParameters = 0;
 }
 
+void VSTInterface::setTempo(uint32 bpm) {
+	// We just pass this on as a pseudo event that can be easily filtered out.
+	send(bpm << 8 | 0xFF);
+}
+
 void VSTInterface::send(uint32 msg) {
 	_eventsChain = new (_eventsNodePool) EvtNode(_eventsChain, msg);
 	++_eventsCount;
@@ -109,7 +113,7 @@ void VSTInterface::loadSettings() {
 	bool failed = (s->readUint32BE() == MKTAG('S', 'V', 'M', ' ')) ? (s->readUint32BE() > VST_SAVE_VERSION): true;
 	if (failed) {
 		delete s;
-		warning ("VSTInterface::loadSettings(): Could not process invalid settings file: '%s'", getSaveFileName());
+		warning ("VSTInterface::loadSettings(): Could not process invalid settings file: '%s'", getSaveFileName().c_str());
 		return;
 	}
 
@@ -146,8 +150,10 @@ void VSTInterface::loadSettings() {
 
 void VSTInterface::saveSettings() {
 	Common::OutSaveFile *s = g_system->getSavefileManager()->openForSaving(getSaveFileName());
-	if (!s)
-		error("VSTInterface::saveSettings(): Unable to create config savefile");
+	if (!s) {
+		warning("VSTInterface::saveSettings(): Unable to create config savefile");
+		return;
+	}
 
 	s->writeUint32BE(MKTAG('S', 'V', 'M', ' '));
 	s->writeUint32BE(VST_SAVE_VERSION);
