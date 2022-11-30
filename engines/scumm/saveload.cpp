@@ -2050,14 +2050,60 @@ void ScummEngine::saveLoadWithSerializer(Common::Serializer &s) {
 		}
 	}
 
+	bool skipImuseData = false;
+	bool missingImuseData = false;
+	//bool syncMusicEngineState = true;
+
+	if (s.isLoading() && _game.platform == Common::kPlatformDOS && (_game.id == GID_MONKEY || _game.id == GID_MONKEY_EGA || _game.id == GID_MONKEY_VGA)) {
+		// MI1 uses the iMuse engine for certain sound drivers (just the midi playback
+		// parts, there isn't real iMuse in MI1), but not for others. It causes savegame
+		// incompatibitily when saving with an "iMuse" sound setting, then changing it to
+		// a non-iMuse setting and trying to load that savegame. Same when doing it vice
+		// versa. We have already synced the SCUMM variables, so we can simply check the
+		// VAR_SOUNDCARD variable to determine whether we need to apply a post-load fix.
+		// The reality is more frustrating, though: The var will just have the setting from
+		// the game start, e. g. if you have an old game which was started in AdLib mode,
+		// later you saved your game with a CMS setting, this is impossible to recover (or
+		// at least I haven't found a solution. For new savegames I have added post-load
+		// updates to VAR_SOUNDCARD, so these actually have reliable values.
+		
+		// We are running in iMuse mode, but the savegame was saved with PC Speaker, PCJr or CMS.
+		if (_imuse && VAR(VAR_SOUNDCARD) < 3) {
+			missingImuseData = true;			
+		// We are running in PC Speaker, PCJr or CMS mode, but the savegame has iMuse content.
+		} else if (!_imuse && VAR(VAR_SOUNDCARD) > 2) {
+			skipImuseData = true;
+		}
+
+		if (missingImuseData || skipImuseData) {
+			int sndCardType = (VAR(VAR_SOUNDCARD) >= 0 && VAR(VAR_SOUNDCARD) < 5) ? VAR(VAR_SOUNDCARD) : 5;
+			const char sndCardStr[6][13] = { "PC Speaker", "PCJr", "CMS", "AdLib", "Roland MT-32", "Unknown" };
+			Common::String msg = "Loading savegame which was %s with a different sound setting ('%s').\n";
+			if (s.getVersion() > 106) {
+				msg = Common::String::format(msg.c_str(), "saved", sndCardStr[sndCardType]);
+				msg += "Trying to recover. Glitches might occur";
+			} else {
+				msg = Common::String::format(msg.c_str(), "initially started", sndCardStr[sndCardType]);
+				msg += "The exact setting with which the savegame was created cannot be determined.\n"
+					"If your sound setting actually matches the one you used when saving this game\n"
+					"everything should be fine. Otherwise, it is recommended to reset the sound\n"
+					"setting to the one you used when saving this game, try loading it again and\n"
+					"then immediately make a new savegame";
+				missingImuseData = skipImuseData = false;
+			}
+			warning("%s", msg.c_str());			
+		}
+	}
 
 	//
 	// Save/load the iMuse status
 	//
-	if (_imuse && (_saveSound || !_saveTemporaryState)) {
+
+	if (skipImuseData) {
+
+	} else if (_imuse && (_saveSound || !_saveTemporaryState) && !missingImuseData) {
 		_imuse->saveLoadIMuse(s, this);
 	}
-
 
 	//
 	// Save/load music engine status

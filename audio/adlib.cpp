@@ -1893,21 +1893,18 @@ void MidiDriver_ADLIB::struct10Setup(Struct10 *s10) {
 }
 
 void MidiDriver_ADLIB::adlibPlayNote(int channel, int note) {
-	byte old, oct, notex;
-	uint8 note2;
-	int i; 
-
-	note2 = (note >> 7) - 4;
+#if 0
+	byte note2 = (note >> 7) - 4;
 	note2 = (note2 < 128) ? note2 : 0;
 
-	oct = (note2 / 12);
+	byte oct = (note2 / 12);
 	if (oct > 7)
 		oct = 7 << 2;
 	else
 		oct <<= 2;
-	notex = note2 % 12 + 3;
+	byte notex = note2 % 12 + 3;
 
-	old = adlibGetRegValue(channel + 0xB0);
+	byte old = adlibGetRegValue(channel + 0xB0);
 	if (old & 0x20) {
 		old &= ~0x20;
 		if (oct > old) {
@@ -1923,9 +1920,19 @@ void MidiDriver_ADLIB::adlibPlayNote(int channel, int note) {
 		}
 	}
 
-	i = (notex << 3) + ((note >> 4) & 0x7);
+	int i = (notex << 3) + ((note >> 4) & 0x7);
 	assert(i < ARRAYSIZE(g_noteFrequencies));
 	adlibWrite(channel + 0xA0, g_noteFrequencies[i]);
+#else
+	note -= 31;
+	byte oct = note / 12;
+	note = note % 12;
+
+	const uint16 frq[] = { 0x200,  0x21E,  0x23F,  0x261,  0x285,  0x2AB,  0x2D4,  0x300, 0x32E,  0x35E,  0x390,  0x3C7 };
+	oct = (oct << 2) | (frq[note] >> 8);
+	adlibWrite(channel + 0xA0, frq[note]);
+#endif
+	
 	adlibWrite(channel + 0xB0, oct | 0x20);
 }
 
