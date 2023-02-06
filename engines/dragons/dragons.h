@@ -21,7 +21,10 @@
 #ifndef DRAGONS_DRAGONS_H
 #define DRAGONS_DRAGONS_H
 
-#include "gui/EventRecorder.h"
+//#include "gui/EventRecorder.h"
+#include "common/endian.h"
+#include "common/events.h"
+
 #include "engines/engine.h"
 #include "dragons/specialopcodes.h"
 #include "dragons/detection.h"
