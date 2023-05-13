@@ -405,6 +405,8 @@ bool KyraRpgEngine::snd_processEnvironmentalSoundEffect(int soundId, int block) 
 
 	if (_flags.gameID == GI_EOB2 && _flags.platform == Common::kPlatformFMTowns)
 		_environmentSfxVol = dist ? (16 - dist) * 8 - 1 : 127;
+	else if (_flags.gameID == GI_EOB2 && _flags.platform == Common::kPlatformPC98)
+		_environmentSfxVol = (15 - dist) * 6 + 37;
 	else if (_flags.platform == Common::kPlatformAmiga)
 		_environmentSfxVol = dist ? (soundId != 13 ? dist : (dist >= 4) ? 4 : dist) : 1;
 	else if (_flags.platform == Common::kPlatformSegaCD)
