@@ -1289,7 +1289,7 @@ void DarkmoonSequenceHelper::loadScene(int index, int pageNum, bool ignorePalett
 	if ((pageNum == 0 || pageNum == 1) && !_vm->skipFlag() && !_vm->shouldQuit())
 		_screen->updateScreen();
 }
-
+bool once = false;
 void DarkmoonSequenceHelper::animCommand(int index, int del) {
 	if (_vm->skipFlag() || _vm->shouldQuit())
 		return;
@@ -1380,6 +1380,7 @@ void DarkmoonSequenceHelper::animCommand(int index, int del) {
 				break;
 
 			if (isT1 && !_t1cps) {
+				once = true;
 				_t1cps = new byte[64000];
 				memset(_t1cps, 0, 4);
 				Common::ScopedPtr<Common::SeekableReadStream> srcStream(_vm->resource()->createReadStream("T1.CPS"));
@@ -1418,12 +1419,18 @@ void DarkmoonSequenceHelper::animCommand(int index, int del) {
 
 				_vm->delayUntil(end);
 			} else {
-				_screen->enableShapeBackgroundFading(true);
-				_screen->setShapeFadingLevel(1);
-
 				end = _system->getMillis() + s->delay * _vm->tickLength();
 
-				if (palIndex) {
+				if (isT1 && palIndex) {
+					if (once) {
+					_screen->copyRegion(s->x1 - 8, s->y1 - 8, 0, 0, shapeWidth, shapeHeight, 2, 4, Screen::CR_NO_P_CHECK);
+					_screen->drawT1Shape(4, _t1cps, 0, 0, 0);
+					_screen->crossFadeRegion(0, 0, s->x1, s->y1, shapeWidth, shapeHeight, 4, 0);
+					once = false;
+					}
+				} else if (palIndex) {
+					_screen->enableShapeBackgroundFading(true);
+					_screen->setShapeFadingLevel(1);
 					_screen->setFadeTable(_fadingTables[palIndex - 1]);
 
 					_screen->copyRegion(s->x1 - 8, s->y1 - 8, 0, 0, shapeWidth, shapeHeight, 2, 4, Screen::CR_NO_P_CHECK);
