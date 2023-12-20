@@ -397,6 +397,10 @@ int QueuingAudioStreamImpl::readBuffer(int16 *buffer, const int numSamples) {
 			break;
 	}
 
+	if (samplesDecoded < numSamples) {
+		debug("Buffer underrun: %d missing samples", samplesDecoded < numSamples);
+	}
+
 	return samplesDecoded;
 }
 
