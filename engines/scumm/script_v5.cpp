@@ -3068,6 +3068,7 @@ void ScummEngine_v5::o5_verbOps() {
 	VerbSlot *vs;
 	int a, b;
 	byte *ptr;
+	byte dbg[500];
 
 	verb = getVarOrDirectByte(PARAM_1);
 
@@ -3112,6 +3113,19 @@ void ScummEngine_v5::o5_verbOps() {
 			break;
 		case 6:		// SO_VERB_ON
 			vs->curmode = 1;
+			
+			ptr = getResourceAddress(rtVerb, slot);
+			if (ptr)
+				convertMessageToString(ptr, dbg, sizeof(dbg));
+
+ 			if (!scumm_stricmp((const char*)dbg, "what is book  ") || !scumm_stricmp((const char*)dbg, "Was ist Buch  ") || !scumm_stricmp((const char *)dbg, "Was ist Buch ")) {
+				drawLine(_mouse.x - 3, _mouse.y - 8, _mouse.x + 3, _mouse.y - 8, 15);
+				drawLine(_mouse.x + 3, _mouse.y - 8, _mouse.x + 3, _mouse.y + 8, 15);
+				drawLine(_mouse.x - 3, _mouse.y + 8, _mouse.x + 3, _mouse.y + 8, 15);
+				drawLine(_mouse.x - 3, _mouse.y - 8, _mouse.x - 3, _mouse.y + 8, 15);
+				_sound->startSound(44);
+			}
+
 			break;
 		case 7:		// SO_VERB_OFF
 			vs->curmode = 0;
