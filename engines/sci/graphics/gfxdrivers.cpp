@@ -39,8 +39,8 @@ Common::Point GfxDriver::getMousePos() const {
 GfxDefaultDriver::GfxDefaultDriver(uint16 screenWidth, uint16 screenHeight) : GfxDriver(screenWidth, screenHeight, 0, 1) {
 	switch (g_sci->getResMan()->getViewType()) {
 	case kViewEga:
-		if (g_sci->getPlatform() != Common::kPlatformDOS)
-			_numColors = 16;	// QFG PC-98 with 8 colors also reports 16 here
+		_numColors = 16;	// QFG PC-98 with 8 colors also reports 16 here
+		break;
 	case kViewAmiga:
 		_numColors = 32;
 		break;
@@ -205,8 +205,8 @@ SCI0_CGADriver::SCI0_CGADriver(bool emulateCGAModeOnEGACard) : SCI0_DOSPreVGADri
 
 	delete[] buf;
 
-	assert(palIndex >= 0 && palIndex <= 1);
-	assert(palIntensity >= 0 && palIntensity <= 1);
+	assert(palIndex <= 1);
+	assert(palIntensity <= 1);
 
 	for (int i = 1; i < 4; ++i)
 		colMap[i] = modeColorMap[(!_disableMode5 && mode == 5) ? 2 : palIndex][i] + (palIntensity << 3);
@@ -335,6 +335,10 @@ SCI0_CGABWDriver::~SCI0_CGABWDriver() {
 }
 
 void SCI0_CGABWDriver::copyRectToScreen(const byte *src, int pitch, int x, int y, int w, int h) {
+	// We can't really properly fix the boundaries here, we have to do that before calling this function.
+	assert(!(w & _hAlign));
+	assert(!(x & _hAlign));
+
 	byte *dst1 = _compositeBuffer;
 	byte *dst2 = _compositeBuffer + (w << 1);
 	int tx = x & 3;
@@ -426,6 +430,10 @@ SCI0_HerculesDriver::~SCI0_HerculesDriver() {
 }
 
 void SCI0_HerculesDriver::copyRectToScreen(const byte *src, int pitch, int x, int y, int w, int h) {
+	// We can't really properly fix the boundaries here, we have to do that before calling this function.
+	assert(!(w & _hAlign));
+	assert(!(x & _hAlign));
+
 	byte *dst = _compositeBuffer;
 	byte sw = y & 1;
 	y = (y & ~1) * 3 / 2 + (y & 1);
