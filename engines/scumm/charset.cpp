@@ -1708,6 +1708,7 @@ int CharsetRendererMac::getStringWidth(int arg, const byte *text) {
 	int pos = 0;
 	int width = 0;
 	int chr;
+	int ju = _font->getFontHeight();
 
 	while ((chr = text[pos++]) != 0) {
 		// The only control codes I've seen in use are line breaks in
@@ -1718,11 +1719,11 @@ int CharsetRendererMac::getStringWidth(int arg, const byte *text) {
 				break;
 			warning("getStringWidth: Unexpected escape sequence %d", chr);
 		} else {
-			width += getDrawWidthIntern(chr);
+			width += (getDrawWidthIntern(chr) / 2 + 1);
 		}
 	}
 
-	return width / 2;
+	return width;
 }
 
 int CharsetRendererMac::getDrawWidthIntern(uint16 chr) const {
@@ -1925,11 +1926,15 @@ void CharsetRendererMac::printCharInternal(int chr, int color, bool shadow, int 
 			_font->drawChar(&_vm->_textSurface, chr, x + 1, y - 1, 0);
 			_font->drawChar(&_vm->_textSurface, chr, x - 1, y + 1, 0);
 			_font->drawChar(&_vm->_textSurface, chr, x + 2, y + 2, 0);
+			if ((chr >= 16 && chr <= 23) || chr == 60 || chr == 95)
+				_font->drawChar(&_vm->_textSurface, chr, x + 1, y + 1, 0);
 
 			if (color != -1) {
 				_font->drawChar(_vm->_macScreen, chr, x + 1, y - 1 + 2 * _vm->_macScreenDrawOffset, shadowColor);
 				_font->drawChar(_vm->_macScreen, chr, x - 1, y + 1 + 2 * _vm->_macScreenDrawOffset, shadowColor);
 				_font->drawChar(_vm->_macScreen, chr, x + 2, y + 2 + 2 * _vm->_macScreenDrawOffset, shadowColor);
+				if ((chr >= 16 && chr <= 23) || chr == 60 || chr == 95)
+					_font->drawChar(_vm->_macScreen, chr, x + 1, y + 1 + 2 * _vm->_macScreenDrawOffset, shadowColor);
 			}
 		} else {
 			// Indy 3 uses simpler shadowing, and doesn't need the

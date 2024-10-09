@@ -837,7 +837,7 @@ void ScummEngine::setVideoModeVarToCurrentConfig() {
 		VAR(VAR_VIDEOMODE) = 42;
 	// Value only used by the Macintosh version of Indiana Jones and the Last Crusade
 	else if (_game.platform == Common::kPlatformMacintosh && _game.version == 3)
-		VAR(VAR_VIDEOMODE) = 50;
+		VAR(VAR_VIDEOMODE) = (_renderMode == Common::kRenderMacintoshBW) ? 51 : 50;
 	// Value only used by the Amiga version of Monkey Island 2
 	else if (_game.platform == Common::kPlatformAmiga)
 		VAR(VAR_VIDEOMODE) = 82;

@@ -1089,7 +1089,7 @@ void ScummEngine::displayDialog() {
 		} else {
 			int stringWidth = _charset->getStringWidth(0, _charsetBuffer + _charsetBufPos);
 			_nextLeft -= stringWidth / 2;
-
+			debug ("CHARSET_1: stringWidth = %d, _nextLeft = %d", stringWidth, _nextLeft);
 			if (_nextLeft < 0)
 				// The commented out part of the next line was meant as a fix for Kanji text glitches in DIG.
 				// But these glitches couldn't be reproduced in recent tests. So the underlying issue might
