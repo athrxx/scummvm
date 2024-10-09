@@ -87,7 +87,7 @@ DWORD _prefetchThreadId = 0;
 
 PluginsSearchResult detectVSTPlugins() {
 	PluginsSearchResult res;
-
+	return res;
 	if (_prefetchThread && _prefetchThreadId != GetCurrentThreadId()) {
 		uint32 wr = WaitForSingleObject(_prefetchThread, 10000);
 		CloseHandle(_prefetchThread);
