@@ -374,6 +374,7 @@ bool MacV6Gui::handleMenu(int id, Common::String &name) {
 		case 1:	// Text & Voice -> Text Only
 			ConfMan.setBool("subtitles", true);
 			ConfMan.setBool("speech_mute", true);
+			ConfMan.setBool("mute", !(_vm->_soundEnabled & 3));
 			break;
 
 		case 2:	// Text Only -> Voice Only
@@ -392,6 +393,7 @@ bool MacV6Gui::handleMenu(int id, Common::String &name) {
 	case 503:	// Text Only
 		ConfMan.setBool("subtitles", true);
 		ConfMan.setBool("speech_mute", true);
+		ConfMan.setBool("mute", !(_vm->_soundEnabled & 3));
 		syncSoundSettings = true;
 		break;
 
