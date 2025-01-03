@@ -48,6 +48,10 @@ SCI_GFXDRV_DCL2(SCI0_PC98Gfx8Colors);
 SCI_GFXDRV_DCL2(SCI1_PC98Gfx8Colors);
 SCI_GFXDRV_DCL2(WindowsGfx16Colors);
 
+SCI_GFXDRV_DCL1(SCI0_MacGfx);
+SCI_GFXDRV_DCL1(SCI1_MacGfx);
+SCI_GFXDRV_DCL1(SCI_KOR_Gfx);
+
 #undef SCI_GFXDRV_DCL1
 #undef SCI_GFXDRV_DCL2
 
@@ -86,6 +90,8 @@ static const GfxDriverInfo _gfxDriverInfos[] = {
 	{ Common::kRenderPC98_8c, Common::kPlatformUnknown, SCI_VERSION_1_LATE, SCI_VERSION_1_LATE, GID_ALL, Common::UNK_LANG, kUnused, INITPROCS2(SCI1_PC98Gfx8Colors), 0 },
 	{ Common::kRenderWin16c, Common::kPlatformUnknown, SCI_VERSION_1_1, SCI_VERSION_1_1, GID_ALL, Common::UNK_LANG, kUnused, INITPROCS2(WindowsGfx16Colors), 0 },
 	// Default modes
+	{ Common::kRenderDefault, Common::kPlatformMacintosh, SCI_VERSION_0_EARLY, SCI_VERSION_1_EGA_ONLY, GID_ALL, Common::UNK_LANG, kUnused, INITPROCS1(SCI0_MacGfx), 0 },
+	{ Common::kRenderDefault, Common::kPlatformMacintosh, SCI_VERSION_1_EARLY, SCI_VERSION_1_1, GID_ALL, Common::UNK_LANG, kUnused, INITPROCS1(SCI1_MacGfx), 0 },
 	{ Common::kRenderDefault, Common::kPlatformPC98, SCI_VERSION_0_LATE, SCI_VERSION_0_LATE, GID_PQ2, Common::UNK_LANG, kUnused, INITPROCS1(PC98Gfx16Colors), 2 },
 	{ Common::kRenderDefault, Common::kPlatformPC98, SCI_VERSION_01, SCI_VERSION_01, GID_ALL, Common::UNK_LANG, kUnused, INITPROCS1(PC98Gfx16Colors), 0 },
 	{ Common::kRenderDefault, Common::kPlatformPC98, SCI_VERSION_1_EARLY, SCI_VERSION_1_LATE, GID_ALL, Common::UNK_LANG, kUnused, INITPROCS1(PC98Gfx16Colors), 1 },
