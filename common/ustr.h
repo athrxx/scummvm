@@ -216,6 +216,7 @@ private:
 	void decodeWindows949(const char *src, uint32 len);
 	void decodeWindows950(const char *src, uint32 len);
 	void decodeJohab(const char *src, uint32 len);
+	void decodeMacJapanese(const char *src, uint32 len);
 	void decodeUTF8(const char *str, uint32 len);
 
 	friend class String;

@@ -177,6 +177,7 @@ protected:
 	StringEncodingResult encodeWindows949(const U32String &src, char errorChar);
 	StringEncodingResult encodeWindows950(const U32String &src, bool translit, char errorChar);
 	StringEncodingResult encodeJohab(const U32String &src, char errorChar);
+	StringEncodingResult encodeMacJapanese(const U32String &src, char errorChar);
 	StringEncodingResult encodeOneByte(const U32String &src, CodePage page, bool translit, char errorChar);
 	StringEncodingResult encodeInternal(const U32String &src, CodePage page, char errorChar);
 	StringEncodingResult translitChar(U32String::value_type point, char errorChar);
