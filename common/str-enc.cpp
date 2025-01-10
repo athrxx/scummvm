@@ -103,10 +103,14 @@ static uint16 *windows950ReverseConversionTable = 0;
 static const uint16 *johabConversionTable = 0;
 static const uint16 *johabReverseConversionTable = 0;
 static const uint16 *traditional2SimplifiedChineseConversionTable = 0;
+static const uint16 *macJapaneseConversionTable = 0;
+static const uint16 *macJapaneseReverseConversionTable = 0;
 
+int tsize = 44;
 static const uint16 *loadCJKTable(File &f, int idx, size_t sz) {
 	f.seek(16 + idx * 4);
 	uint32 off = f.readUint32LE();
+	tsize += sz*2;
 	f.seek(off);
 	uint16 *res = new uint16[sz];
 	f.read(res, 2 * sz);
@@ -117,8 +121,8 @@ static const uint16 *loadCJKTable(File &f, int idx, size_t sz) {
 	return res;
 }
 
-static void loadChineseT2S(File &f) {
-	f.seek(16 + 5 * 4);
+static void loadChineseT2S(File &f, int idx) {
+	f.seek(16 + idx * 4);
 	uint32 off = f.readUint32LE();
 	f.seek(off);
 	uint16 *res = new uint16[0x10000];
@@ -164,15 +168,17 @@ static void loadCJKTables() {
 		return;
 	}
 
-	windows932ConversionTable = loadCJKTable(f, 0, 47 * 192);
+	windows932ConversionTable = loadCJKTable(f, 0, 45 * 192);
 	windows949ConversionTable = loadCJKTable(f, 1, 0x7e * 0xb2);
 	windows950ConversionTable = loadCJKTable(f, 2, 89 * 157);
 	if (num_tables >= 4)
 		johabConversionTable = loadCJKTable(f, 3, 80 * 188);
 	if (num_tables >= 5)
 		windows936ConversionTable = loadCJKTable(f, 4, 126 * 190);
+	if (num_tables >= 7)
+		macJapaneseConversionTable = loadCJKTable(f, 5, 45 * 192);
 	if (num_tables >= 6)
-		loadChineseT2S(f);
+		loadChineseT2S(f, num_tables - 1);
 }
 
 void releaseCJKTables() {
@@ -199,6 +205,10 @@ void releaseCJKTables() {
 	johabReverseConversionTable = 0;
 	delete[] traditional2SimplifiedChineseConversionTable;
 	traditional2SimplifiedChineseConversionTable = 0;
+	delete[] macJapaneseConversionTable;
+	macJapaneseConversionTable = 0;
+	delete[] macJapaneseReverseConversionTable;
+	macJapaneseReverseConversionTable = 0;
 }
 
 void U32String::decodeWindows932(const char *src, uint32 len) {
@@ -238,10 +248,12 @@ void U32String::decodeWindows932(const char *src, uint32 len) {
 			highidx = high - 0x81;
 		else if (high >= 0x87 && high < 0xa0)
 			highidx = high - 0x87 + 4;
-		else if (high >= 0xe0 && high < 0xef)
+		else if (high >= 0xe0 && high < 0xeb)
 			highidx = high - 0xe0 + 29;
+		else if (high >= 0xed && high < 0xef)
+			highidx = high - 0xed + 40;
 		else if (high >= 0xfa && high < 0xfd)
-			highidx = high - 0xfa + 44;
+			highidx = high - 0xfa + 42;
 		else {
 			operator+=(invalidCode);
 			continue;
@@ -464,6 +476,87 @@ void U32String::decodeJohab(const char *src, uint32 len) {
 	}
 }
 
+void U32String::decodeMacJapanese(const char *src, uint32 len) {
+	ensureCapacity(len, false);
+
+	if (!cjk_tables_loaded)
+		loadCJKTables();
+
+	for (uint i = 0; i < len;) {
+		uint8 high = src[i++];
+
+		if ((high & 0x80) == 0x00) {
+			switch (high) {
+			case 0x14:
+				// We cheat in the logo character here. The lower 32 chars aren't actually part of the MacJapanese encoding.
+				operator+=(0xf8ff);
+				break;
+			default:
+				operator+=(high);
+				break;
+			}
+			continue;
+		}
+
+		// Katakana
+		if (high >= 0xa1 && high <= 0xdf) {
+			operator+=(high - 0xa1 + 0xFF61);
+			continue;
+		}
+
+		// Mac one-byte extensions
+		switch (high) {
+		case 0x80:
+			operator+=(0x005c);
+			continue;
+		case 0xa0:
+			operator+=(high);
+			continue;
+		case 0xfd:
+			operator+=(0x00a9);
+			continue;
+		case 0xfe:
+			operator+=(0x2122);
+			continue;
+		case 0xff:
+			operator+=(0x2026);
+			continue;
+		default:
+			break;
+		}
+
+		if (i >= len) {
+			operator+=(invalidCode);
+			continue;
+		}
+
+		uint8 low = src[i++];
+		if (low < 0x40) {
+			operator+=(invalidCode);
+			continue;
+		}
+		uint8 lowidx = low - 0x40;
+		uint8 highidx;
+
+		if (high >= 0x81 && high < 0xa0)
+			highidx = high - 0x81;
+		else if (high >= 0xe0 && high < 0xee)
+			highidx = high - 0xe0 + 31;
+		else {
+			operator+=(invalidCode);
+			continue;
+		}
+
+		if (!macJapaneseConversionTable) {
+			operator+=(invalidCode);
+			continue;
+		}
+
+		// Main range
+		uint16 val = macJapaneseConversionTable[highidx * 192 + lowidx];
+		operator+=(val ? val : invalidCode);
+	}
+}
 
 StringEncodingResult String::encodeWindows932(const U32String &src, char errorChar) {
 	StringEncodingResult encodingResult = kStringEncodingResultSucceeded;
@@ -475,7 +568,7 @@ StringEncodingResult String::encodeWindows932(const U32String &src, char errorCh
 
 	if (!windows932ReverseConversionTable && windows932ConversionTable) {
 		uint16 *rt = new uint16[0x10000]();
-		for (uint highidx = 0; highidx < 47; highidx++) {
+		for (uint highidx = 0; highidx < 45; highidx++) {
 			uint8 high = 0;
 			if (highidx < 4)
 				high = highidx + 0x81;
@@ -853,6 +946,103 @@ StringEncodingResult String::encodeJohab(const U32String &src, char errorChar) {
 	return encodingResult;
 }
 
+StringEncodingResult String::encodeMacJapanese(const U32String &src, char errorChar) {
+	StringEncodingResult encodingResult = kStringEncodingResultSucceeded;
+
+	ensureCapacity(src.size() * 2, false);
+
+	if (!cjk_tables_loaded)
+		loadCJKTables();
+
+	if (!macJapaneseReverseConversionTable && macJapaneseConversionTable) {
+		uint16 *rt = new uint16[0x10000]();
+		for (uint highidx = 0; highidx < 45; highidx++) {
+			uint8 high = 0;
+			if (highidx < 31)
+				high = highidx + 0x81;
+			else
+				high = highidx + 0xe0 - 31;
+
+
+			for (uint lowidx = 0; lowidx < 192; lowidx++) {
+				uint8 low = lowidx + 0x40;
+				uint16 unicode = macJapaneseConversionTable[highidx * 192 + lowidx];
+
+				rt[unicode] = (high << 8) | low;
+			}
+		}
+		macJapaneseReverseConversionTable = rt;
+	}
+
+	for (uint i = 0; i < src.size();) {
+		uint32 point = src[i++];
+
+		if (point < 0x80) {
+			// Mac one-byte extension
+			if (point == 0x5c)
+				point = 0x80;
+
+			operator+=(point);
+			continue;
+		}
+
+		// Katakana
+		if (point >= 0xff61 && point <= 0xff9f) {
+			operator+=(0xa1 + (point - 0xFF61));
+			continue;
+		}
+
+		// Mac one-byte extensions
+		switch (point) {
+		case 0xa0:
+			operator+=('\xa0');
+			continue;
+		case 0xa9:
+			operator+=('\xfd');
+			continue;
+		case 0x2122:
+			operator+=('\xfe');
+			continue;
+		case 0x2026:
+			operator+=('\xff');
+			continue;
+		case 0xf8ff:
+			// We cheat in the logo character here. The lower 32 chars aren't actually part of the MacJapanese encoding.
+			operator+=('\x14');
+			continue;
+		default:
+			break;
+		}
+
+		if (point > 0x10000) {
+			operator+=(errorChar);
+			encodingResult = kStringEncodingResultHasErrors;
+			continue;
+		}
+
+		if (!macJapaneseReverseConversionTable) {
+			operator+=(errorChar);
+			encodingResult = kStringEncodingResultHasErrors;
+			continue;
+		}
+
+		uint16 rev = macJapaneseReverseConversionTable[point];
+		if (rev != 0) {
+			operator+=(rev >> 8);
+			operator+=(rev & 0xff);
+			continue;
+		}
+
+		// This codepage contains cyrillic, so no need to transliterate
+
+		operator+=(errorChar);
+		encodingResult = kStringEncodingResultHasErrors;
+		continue;
+	}
+
+	return encodingResult;
+}
+
 // //TODO: This is a quick and dirty converter. Refactoring needed:
 // 1. Original version has an option for performing strict / nonstrict
 //    conversion for the 0xD800...0xDFFF interval
@@ -1157,6 +1347,8 @@ StringEncodingResult String::encodeInternal(const U32String &src, CodePage page,
 		return encodeWindows950(src, true, errorChar);
 	case kJohab:
 		return encodeJohab(src, errorChar);
+	case kMacJapanese:
+		return encodeMacJapanese(src, errorChar);
 	default:
 		return encodeOneByte(src, page, true, errorChar);
 	}
@@ -1202,6 +1394,9 @@ void U32String::decodeInternal(const char *str, uint32 len, CodePage page) {
 		break;
 	case kJohab:
 		decodeJohab(str, len);
+		break;
+	case kMacJapanese:
+		decodeMacJapanese(str, len);
 		break;
 	default:
 		decodeOneByte(str, len, page);
