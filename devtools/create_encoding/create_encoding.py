@@ -19,7 +19,11 @@ def processtable(inputfilename, outfile, highrange, lowrange):
             if line.startswith('#'):
                 continue
             splits = line.split()
+            if len(splits) == 0:
+                continue
             if len(splits[0]) <= 5:
+                continue
+            if len(splits[1]) > 6:
                 continue
             key = int(splits[0], 16)
             val = int(splits[1], 16)
@@ -50,7 +54,7 @@ FILE = 'file'
 tables = [
     {
         FILE: "CP932.TXT",
-        HIGH: merge_ranges(range(0x81, 0x85), range(0x87, 0xa0), range(0xe0, 0xef), range(0xfa, 0xfd)),
+        HIGH: merge_ranges(range(0x81, 0x85), range(0x87, 0xa0), range(0xe0, 0xeb), range(0xed, 0xef), range(0xfa, 0xfd)),
         LOW: range(0x40, 0x100)
     },
     {
@@ -73,9 +77,14 @@ tables = [
         HIGH: range(0x81, 0xFF),
         LOW: merge_ranges(range(0x40, 0x7f), range(0x80, 0xff))
     },
-    {
-        FILE: "hanzi_charmap.py"
+	{
+        FILE: "JAPANESE.TXT",
+        HIGH: merge_ranges(range(0x81, 0xa0), range(0xe0, 0xee)),
+        LOW: range(0x40, 0x100)
     },
+	{
+        FILE: "hanzi_charmap.py"
+    }
 ]
 
 # number of tables
