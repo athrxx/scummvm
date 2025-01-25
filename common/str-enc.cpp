@@ -485,18 +485,8 @@ void U32String::decodeMacJapanese(const char *src, uint32 len) {
 	for (uint i = 0; i < len;) {
 		uint8 high = src[i++];
 
-		if ((high & 0x80) == 0x00) {
-			switch (high) {
-			case 0x14:
-				// We cheat in the logo character here. The lower 32 chars aren't actually part of the MacJapanese encoding.
-				operator+=(0xf8ff);
-				break;
-			default:
-				operator+=(high);
-				break;
-			}
-			continue;
-		}
+		if ((high & 0x80) == 0x00)
+			operator+=(high);
 
 		// Katakana
 		if (high >= 0xa1 && high <= 0xdf) {
@@ -1005,10 +995,6 @@ StringEncodingResult String::encodeMacJapanese(const U32String &src, char errorC
 			continue;
 		case 0x2026:
 			operator+=('\xff');
-			continue;
-		case 0xf8ff:
-			// We cheat in the logo character here. The lower 32 chars aren't actually part of the MacJapanese encoding.
-			operator+=('\x14');
 			continue;
 		default:
 			break;
