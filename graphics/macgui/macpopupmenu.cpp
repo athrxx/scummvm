@@ -24,9 +24,9 @@
 
 namespace Graphics {
 
-MacPopUp::MacPopUp(int id, const Common::Rect &bounds, MacWindowManager *wm, const char *string) : MacMenu(id, bounds, wm) {
+MacPopUp::MacPopUp(int id, const Common::Rect &bounds, MacWindowManager *wm, const char *string, Common::CodePage encoding) : MacMenu(id, bounds, wm) {
 	_menuItemId = addMenuItem(nullptr, "");
-	createSubMenuFromString(0, string, 0);
+	createSubMenuFromString(0, string, 0, encoding);
 	wm->addMenu(id, this);
 	_menuId = id;
 }

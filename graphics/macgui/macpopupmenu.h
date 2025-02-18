@@ -31,7 +31,7 @@ class MacWindowManager;
 
 class MacPopUp : public MacMenu {
 public:
-	MacPopUp(int id, const Common::Rect &bounds, MacWindowManager *wm, const char *string);
+	MacPopUp(int id, const Common::Rect &bounds, MacWindowManager *wm, const char *string, Common::CodePage encoding = Common::kCodePageInvalid);
 	uint32 drawAndSelectMenu(int x, int y, int item);
 	Common::String getItemText(int item);
 
