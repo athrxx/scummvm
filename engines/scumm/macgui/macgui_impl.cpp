@@ -54,20 +54,6 @@ static void activateMenuCallback(void *ref) {
 MacGuiImpl::MacGuiImpl(ScummEngine *vm, const Common::Path &resourceFile) : _vm(vm), _system(_vm->_system), _surface(_vm->_macScreen), _resourceFile(resourceFile) {
 	_fonts.clear();
 	_strsStrings.clear();
-
-	// kMacRomanConversionTable is a conversion table from Mac Roman
-	// 128-255 to unicode. What we need, however, is a mapping from
-	// unicode 160-255 to Mac Roman.
-
-	for (int i = 0; i < ARRAYSIZE(_unicodeToMacRoman); i++)
-		_unicodeToMacRoman[i] = 0;
-
-	for (int i = 0; i < ARRAYSIZE(Common::kMacRomanConversionTable); i++) {
-		int unicode = Common::kMacRomanConversionTable[i];
-
-		if (unicode >= 160 && unicode <= 255)
-			_unicodeToMacRoman[unicode - 160] = 128 + i;
-	}
 }
 
 MacGuiImpl::~MacGuiImpl() {
@@ -81,24 +67,6 @@ uint32 MacGuiImpl::getBlack() const {
 
 uint32 MacGuiImpl::getWhite() const {
 	return _windowManager->_colorWhite;
-}
-
-int MacGuiImpl::toMacRoman(int unicode) const {
-	if (unicode >= 32 && unicode <= 127)
-		return unicode;
-
-	if (unicode < 160 || unicode > 255)
-		return 0;
-
-	int macRoman = _unicodeToMacRoman[unicode - 160];
-
-	// These characters are defined in Mac Roman, but apparently not
-	// present in older fonts like Chicago?
-
-	if (macRoman >= 0xD9 && macRoman != 0xF0)
-		macRoman = 0;
-
-	return macRoman;
 }
 
 void MacGuiImpl::setPaletteDirty() {
@@ -170,6 +138,7 @@ MacGuiImpl::DelayStatus MacGuiImpl::delay(uint32 ms) {
 
 void MacGuiImpl::menuCallback(int id, Common::String &name, void *data) {
 	MacGuiImpl *gui = (MacGuiImpl *)data;
+	assert(gui);
 
 	// This menu item (e.g. a menu separator) has no action, so it can be
 	// immediately ignored.
@@ -202,6 +171,14 @@ void MacGuiImpl::menuCallback(int id, Common::String &name, void *data) {
 		menu->closeMenu();
 }
 
+void MacGuiImpl::menuCallbackU32(int id, Common::U32String &name, void *data) {
+	MacGuiImpl *gui = (MacGuiImpl *)data;
+	assert(gui);
+
+	Common::String name2 = name.encode(gui->getCodePage());
+	menuCallback(id, name2, data);
+}
+
 bool MacGuiImpl::initialize() {
 	if (!readStrings()) {
 		// FIXME: THIS IS A TEMPORARY WORKAROUND
@@ -215,14 +192,23 @@ bool MacGuiImpl::initialize() {
 			return false;
 	}
 
+	// The only relevant language here are those that require a non-ASCII encoding (= for now, Japanese)
+	Common::Language lang = (_vm->_language != Common::JA_JPN) ? Common::UNK_LANG : _vm->_language;
+
 	uint32 menuMode = Graphics::kWMModeNoDesktop | Graphics::kWMModeAutohideMenu |
-		Graphics::kWMModalMenuMode | Graphics::kWMModeNoCursorOverride | Graphics::kWMModeForceMacFonts;
+		Graphics::kWMModalMenuMode | Graphics::kWMModeNoCursorOverride;
+
+	if (lang == Common::UNK_LANG)
+		menuMode |= Graphics::kWMModeForceMacFonts;
 
 	// Allow a more modern UX: the menu doesn't close if the mouse accidentally goes outside the menu area
-	if (_vm->enhancementEnabled(kEnhUIUX))
-		menuMode |= Graphics::kWMModeWin95 | Graphics::kWMModeForceMacFontsInWin95 | Graphics::kWMModeForceMacBorder;
+	if (_vm->enhancementEnabled(kEnhUIUX)) {
+		menuMode |= Graphics::kWMModeWin95 | Graphics::kWMModeForceMacBorder;
+		if (lang == Common::UNK_LANG)
+			menuMode |= Graphics::kWMModeForceMacFontsInWin95;
+	}
 
-	_windowManager = new Graphics::MacWindowManager(menuMode);
+	_windowManager = new Graphics::MacWindowManager(menuMode, nullptr, lang);
 	_windowManager->setEngine(_vm);
 	_windowManager->setScreen(640, _vm->_useMacScreenCorrectHeight ? 480 : 400);
 	_windowManager->setEngineActivateMenuCallback(this, activateMenuCallback);
@@ -242,7 +228,10 @@ bool MacGuiImpl::initialize() {
 			{ 0, nullptr, 0, 0, false }
 		};
 
-		menu->setCommandsCallback(menuCallback, this);
+		if (lang == Common::UNK_LANG)
+			menu->setCommandsCallback(menuCallback, this);
+		else
+			menu->setCommandsCallback(menuCallbackU32, this);
 
 		// Newer games define their menus through an MBAR resource
 
@@ -299,7 +288,7 @@ bool MacGuiImpl::initialize() {
 			int id = 100 * (i + 1);
 			for (int j = 0; j < numberOfMenuItems; j++) {
 				Graphics::MacMenuItem *subItem = menu->getSubMenuItem(item, j);
-				Common::String str = menu->getName(subItem);
+				Common::String str = (lang == Common::UNK_LANG) ? menu->getName(subItem) : menu->getUnicodeName(subItem, getCodePage());
 
 				if (!str.empty()) {
 					menu->setAction(subItem, id++);
@@ -307,7 +296,10 @@ bool MacGuiImpl::initialize() {
 
 				if (str.contains("^3")) {
 					Common::replace(str, "^3", name());
-					menu->setName(subItem, str);
+					if (lang == Common::UNK_LANG)
+						menu->setName(subItem, str);
+					else
+						menu->setUnicodeName(subItem, str, getCodePage());
 				}
 			}
 		}
@@ -347,7 +339,8 @@ void MacGuiImpl::addMenu(Graphics::MacMenu *menu, int menuId) {
 	Common::StringArray *menuDef = Graphics::MacMenu::readMenuFromResource(res);
 	Common::String name = menuDef->operator[](0);
 	Common::String string = menuDef->operator[](1);
-	int id = menu->addMenuItem(nullptr, name);
+
+	int id = (_windowManager->_language == Common::UNK_LANG) ? menu->addMenuItem(nullptr, name) : menu->addMenuItem(nullptr, name.decode(getCodePage()));
 
 	// The CD version of Fate of Atlantis has a menu item for toggling graphics
 	// smoothing. We retroactively add that to the remaining V5 games, but not
@@ -364,10 +357,11 @@ void MacGuiImpl::addMenu(Graphics::MacMenu *menu, int menuId) {
 		}
 	}
 
-	menu->createSubMenuFromString(id, string.c_str(), 0);
+	menu->createSubMenuFromString(id, string.c_str(), 0, getCodePage());
 
 	delete menuDef;
 	delete res;
+
 
 	resource.close();
 }
@@ -516,6 +510,19 @@ const Graphics::Font *MacGuiImpl::getFont(FontId fontId) {
 	_fonts[(int)fontId] = font;
 
 	return font;
+}
+
+Common::CodePage MacGuiImpl::getCodePage() const {
+	assert(_windowManager);
+	switch (_windowManager->_language) {
+	case Common::JA_JPN:
+		return Common::kMacJapanese;
+	case Common::UNK_LANG:
+		return Common::kMacRoman;//Common::kISO8859_1;
+	default:
+		assert(_vm);
+		return _vm->getDialogCodePage();
+	}
 }
 
 bool MacGuiImpl::getFontParams(FontId fontId, int &id, int &size, int &slant) const {
@@ -886,6 +893,8 @@ MacGuiImpl::MacDialogWindow *MacGuiImpl::createDialog(int dialogId, Common::Rect
 
 	MacDialogWindow *window = createWindow(bounds);
 
+	Common::CodePage cp =getCodePage();
+
 	if (res) {
 		int numItems = res->readUint16BE() + 1;
 
@@ -918,26 +927,26 @@ MacGuiImpl::MacDialogWindow *MacGuiImpl::createDialog(int dialogId, Common::Rect
 				// Button
 				res->seek(-1, SEEK_CUR);
 				str = res->readPascalString();
-				window->addButton(r, str, enabled);
+				window->addButton(r, str, enabled, cp);
 				break;
 
 			case 5:
 				// Checkbox
 				res->seek(-1, SEEK_CUR);
 				str = res->readPascalString();
-				window->addCheckbox(r, str, enabled);
+				window->addCheckbox(r, str, enabled, cp);
 				break;
 
 			case 7:
 				// Control
-				window->addControl(r, res->readUint16BE());
+				window->addControl(r, res->readUint16BE(), cp);
 				break;
 
 			case 8:
 				// Static text
 				res->seek(-1, SEEK_CUR);
 				str = res->readPascalString();
-				window->addStaticText(r, str, enabled);
+				window->addStaticText(r, str, enabled, Graphics::kTextAlignLeft, cp);
 				break;
 
 			case 16:
@@ -1147,7 +1156,7 @@ void MacGuiImpl::prepareSaveLoad(Common::StringArray &savegameNames, bool *avail
 			slotIds[saveCounter] = i;
 			saveCounter++;
 			if (_vm->getSavegameName(i, name)) {
-				Common::String temp = Common::U32String(name, _vm->getDialogCodePage()).encode(Common::kMacRoman);
+				Common::String temp = Common::U32String(name).encode(getCodePage());
 				savegameNames.push_back(temp);
 			} else {
 				// The original printed "WARNING... old savegame", but we do support old savegames :-)
@@ -1170,7 +1179,7 @@ bool MacGuiImpl::runOkCancelDialog(Common::String text) {
 	MacButton *buttonCancel = (MacButton *)window->getWidget(kWidgetButton, 1);
 
 	window->setDefaultWidget(buttonOk);
-	window->addSubstitution(text);
+	window->addSubstitution(text, getCodePage());
 
 	while (!_vm->shouldQuit()) {
 		MacDialogEvent event;

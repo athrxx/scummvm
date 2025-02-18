@@ -19,43 +19,14 @@
  *
  */
 
-#ifndef GRAPHICS_MACGUI_MACPOPUPMENU_H
-#define GRAPHICS_MACGUI_MACPOPUPMENU_H
-
-#include "graphics/macgui/macmenu.h"
+#ifndef GRAPHICS_FONTS_MULTI_H
+#define GRAPHICS_FONTS_MULTI_H
 
 namespace Graphics {
 
-class MacMenu;
-class MacWindowManager;
+class Font;
 
-class MacPopUp : public MacMenu {
-public:
-	MacPopUp(int id, const Common::Rect &bounds, MacWindowManager *wm, const char *string, Common::CodePage encoding = Common::kCodePageInvalid);
-	uint32 drawAndSelectMenu(int x, int y, int item);
-	Common::String getItemText(int item);
-
-	bool draw(ManagedSurface *g, bool forceRedraw = false) override;
-	void closeMenu() override;
-
-	// Extra functions
-	void setSmart(bool smart) {
-		_isSmart = smart;
-	}
-private:
-	int kBlinkDelay = 15; // Blink delay for closing animation
-	int kNumBlinks = 3; // Number of blinks
-
-	int _mouseX;
-	int _mouseY;
-	int _menuItemId;
-	int _menuId;
-
-	bool _isSmart = false;
-	int _offsetY = 0;
-	int _prevCheckedItem = -1;
-
-	bool mouseClicked(int x, int y);
-};
 } // End of namespace Graphics
+
 #endif
+

@@ -1650,6 +1650,8 @@ public:
 	bool reverseIfNeeded(const byte *text, byte *reverseBuf, int reverseBufSize) const;
 	// Returns codepage that matches the game for languages that require it.
 	Common::CodePage getDialogCodePage() const;
+	// Returns codepage that matches the game language, but not the one that the game itself would use, but rather the one for the classic MacOS.
+	Common::CodePage getMacGUICodePage() const;
 
 	// Somewhat hackish stuff for 2 byte support (Chinese/Japanese/Korean)
 	bool _useCJKMode = false;

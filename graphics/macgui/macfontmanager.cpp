@@ -72,42 +72,68 @@ static const struct FontProto {
 	{ kMacFontNonStandard,		Common::UNK_LANG,	Common::kCodePageInvalid,	NULL }
 };
 
+static const MacFontAlias chicagoAlias[] = {
+	{ kMacFontChicago, 0x0000, 0xFFFFFFFF },
+	{ kMacFontNonStandard, 0xFFFFFFFF, 0xFFFFFFFF }
+};
+
+static const MacFontAlias genevaAlias[] = {
+	{ kMacFontGeneva, 0x0000, 0xFFFFFFFF },
+	{ kMacFontNonStandard, 0xFFFFFFFF, 0xFFFFFFFF }
+};
+
+static const MacFontAlias osakaAlias[] = {
+	{ kMacFontOsaka, 0x0000, 0xFFFFFFFF },
+	{ kMacFontChicago, 0x0000, 0x00000020 },
+	{ kMacFontNonStandard, 0xFFFFFFFF, 0xFFFFFFFF }
+};
+
+static const MacFontAlias osakaMonoAlias[] = {
+	{ kMacFontOsakaMono, 0x0000, 0xFFFFFFFF },
+	{ kMacFontChicago, 0x0000, 0x00000020 },
+	{ kMacFontNonStandard, 0xFFFFFFFF, 0xFFFFFFFF }
+};
+
+static const MacFontAlias nonStandardAlias[] = {
+	{ kMacFontNonStandard, 0xFFFFFFFF, 0xFFFFFFFF }
+};
+
 struct AliasProto {
 	int id;
-	int aliasForId;
+	const MacFontAlias *aliasForId;
 	const char *name;
 };
 
 static const AliasProto defaultAliases[] = {
 	// English names for Japanese fonts
-	{ kMacFontOsakaMono,		kMacFontOsakaMono,	"OsakaMono" },
+	{ kMacFontOsakaMono,		osakaMonoAlias,	"OsakaMono" },
 
 	// Missing Japanese fonts
 	// These technically should be separate fonts, not just aliases for Osaka.
 	// However, we don't have a free source for these right now.
-	{ kMacFontBookMinchoM,		kMacFontOsaka,		"\x96\x7B\x96\xBE\x92\xA9\x81\x7C\x82\x6C" }, // Book Mincho - M
-	{ kMacFontMonoGothic,		kMacFontOsakaMono,	"\x93\x99\x95\x9D\x83\x53\x83\x56\x83\x62\x83\x4E" }, // Mono Gothic
-	{ kMacFontMonoMing,		kMacFontOsakaMono,	"\x93\x99\x95\x9D\x96\xBE\x92\xA9" }, // Mono Ming
-	{ kMacFontMediumGothic,		kMacFontOsaka,		"\x92\x86\x83\x53\x83\x56\x83\x62\x83\x4E\x91\xCC" }, // Medium Gothic
-	{ kMacFontMing,			kMacFontOsaka,		"\x8D\xD7\x96\xBE\x92\xA9\x91\xCC" }, // Ming
-	{ kMacFontHeiseiMincho,		kMacFontOsaka,		"\x95\xBD\x90\xAC\x96\xBE\x92\xA9" }, // Heisei Mincho
-	{ kMacFontHeiseiKakuGothic,	kMacFontOsaka,		"\x95\xBD\x90\xAC\x8A\x70\x83\x53\x83\x56\x83\x62\x83\x4E" }, // Heisei Kaku Gothic
+	{ kMacFontBookMinchoM,		osakaAlias,		"\x96\x7B\x96\xBE\x92\xA9\x81\x7C\x82\x6C" }, // Book Mincho - M
+	{ kMacFontMonoGothic,		osakaMonoAlias,	"\x93\x99\x95\x9D\x83\x53\x83\x56\x83\x62\x83\x4E" }, // Mono Gothic
+	{ kMacFontMonoMing,		osakaMonoAlias,	"\x93\x99\x95\x9D\x96\xBE\x92\xA9" }, // Mono Ming
+	{ kMacFontMediumGothic,		osakaAlias,		"\x92\x86\x83\x53\x83\x56\x83\x62\x83\x4E\x91\xCC" }, // Medium Gothic
+	{ kMacFontMing,			osakaAlias,		"\x8D\xD7\x96\xBE\x92\xA9\x91\xCC" }, // Ming
+	{ kMacFontHeiseiMincho,		osakaAlias,		"\x95\xBD\x90\xAC\x96\xBE\x92\xA9" }, // Heisei Mincho
+	{ kMacFontHeiseiKakuGothic,	osakaAlias,		"\x95\xBD\x90\xAC\x8A\x70\x83\x53\x83\x56\x83\x62\x83\x4E" }, // Heisei Kaku Gothic
 
-	{ kMacFontNonStandard,		kMacFontNonStandard,	NULL }
+	{ kMacFontNonStandard,		nonStandardAlias,	NULL }
 };
 
 static const AliasProto latinModeAliases[] = {
-	{ kMacFontSystem,		kMacFontChicago,	"System" },
-	{ kMacFontApplication,		kMacFontGeneva,		"Application" },
+	{ kMacFontSystem,		chicagoAlias,	"System" },
+	{ kMacFontApplication,		genevaAlias,		"Application" },
 
-	{ kMacFontNonStandard,		kMacFontNonStandard,	NULL }
+	{ kMacFontNonStandard,		nonStandardAlias,	NULL }
 };
 
 static const AliasProto japaneseModeAliases[] = {
-	{ kMacFontSystem,		kMacFontOsaka,		"System" },
-	{ kMacFontApplication,		kMacFontOsaka,		"Application" },
+	{ kMacFontSystem,		osakaAlias,		"System" },
+	{ kMacFontApplication,		osakaAlias,		"Application" },
 
-	{ kMacFontNonStandard,		kMacFontNonStandard,	NULL }
+	{ kMacFontNonStandard,		nonStandardAlias,	NULL }
 };
 
 static const char *const fontStyleSuffixes[] = {
@@ -485,9 +511,9 @@ const Font *MacFontManager::getFont(MacFont *macFont) {
 
 	debugC(2, kDebugLevelMacGUI, "MacFontManager::getFont(%s), id: %d", getFontName(macFont->getId(), macFont->getSize(), macFont->getSlant(), 0).c_str(), macFont->getId());
 
-	int aliasForId = getFontAliasForId(macFont->getId());
-	if (aliasForId > -1) {
-		macFont->setId(aliasForId);
+	const MacFontAlias *aliasForId = getFontAliasForId(macFont->getId());
+	if (aliasForId->id != kMacFontNonStandard) {
+		macFont->setId(aliasForId->id);
 	}
 
 	printFontRegistry(3, kDebugLevelMacGUI);
@@ -802,13 +828,19 @@ int MacFontManager::getFontIdByName(Common::String name) {
 	return 1;
 }
 
+const MacFontAlias *getFontAliasPrimary(const MacFontAlias *alias) {
+	while (alias && alias->rangeFirst != 0xFFFFFFFF && !(alias->rangeFirst != 0x00000000 && alias->rangeLast == 0xFFFFFFFF))
+		++alias;
+	return alias;
+}
+
 Common::Language MacFontManager::getFontLanguage(uint16 id) {
 	if (!_fontInfo.contains(id)) {
 		warning("MacFontManager::getFontLanguage: No _fontInfo entry for font ID %d", id);
 		return Common::UNK_LANG;
 	}
-	if (_fontInfo[id]->aliasForId > -1) {
-		return getFontLanguage(_fontInfo[id]->aliasForId);
+	if (_fontInfo[id]->aliasForId != nonStandardAlias && getFontAliasPrimary(_fontInfo[id]->aliasForId)->id != kMacFontNonStandard) {
+		return getFontLanguage(getFontAliasPrimary(_fontInfo[id]->aliasForId)->id);
 	}
 	return _fontInfo[id]->lang;
 }
@@ -818,18 +850,18 @@ Common::CodePage MacFontManager::getFontEncoding(uint16 id) {
 		warning("MacFontManager::getFontEncoding: No _fontInfo entry for font ID %d", id);
 		return Common::kCodePageInvalid;
 	}
-	if (_fontInfo[id]->aliasForId > -1) {
-		return getFontEncoding(_fontInfo[id]->aliasForId);
+	if (_fontInfo[id]->aliasForId != nonStandardAlias && getFontAliasPrimary(_fontInfo[id]->aliasForId)->id != kMacFontNonStandard) {
+		return getFontEncoding(getFontAliasPrimary(_fontInfo[id]->aliasForId)->id);
 	}
 	return _fontInfo[id]->encoding;
 }
 
-int MacFontManager::getFontAliasForId(uint16 id) {
+const MacFontAlias *MacFontManager::getFontAliasForId(uint16 id) const {
 	if (!_fontInfo.contains(id)) {
 		warning("MacFontManager::getFontAliasForId: No _fontInfo entry for font ID %d", id);
-		return -1;
+		return nonStandardAlias;
 	}
-	return _fontInfo[id]->aliasForId;
+	return getFontAliasPrimary(_fontInfo[id]->aliasForId);
 }
 
 Common::String MacFontManager::getFontName(uint16 id) {
@@ -837,8 +869,8 @@ Common::String MacFontManager::getFontName(uint16 id) {
 		warning("MacFontManager::getFontName: No _fontInfo entry for font ID %d", id);
 		return "";
 	}
-	if (_fontInfo[id]->aliasForId > -1) {
-		return getFontName(_fontInfo[id]->aliasForId);
+	if (_fontInfo[id]->aliasForId != nonStandardAlias && getFontAliasPrimary(_fontInfo[id]->aliasForId)->id != kMacFontNonStandard) {
+		return getFontName(getFontAliasPrimary(_fontInfo[id]->aliasForId)->id);
 	}
 	return _fontInfo[id]->name;
 }

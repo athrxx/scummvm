@@ -127,7 +127,7 @@ public:
 	void removeMenuItem(MacMenuSubMenu *submenu, uint pos);
 	void loadMenuResource(Common::MacResManager *resFork, uint16 id);
 	void loadMenuBarResource(Common::MacResManager *resFork, uint16 id);
-	void createSubMenuFromString(int id, const char *string, int commandId);
+	void createSubMenuFromString(int id, const char *string, int commandId, Common::CodePage encoding = Common::kCodePageInvalid);
 	void clearSubMenu(int id);
 
 	MacMenuSubMenu *getSubmenu(MacMenuSubMenu *submenu, int index);
@@ -163,7 +163,9 @@ public:
 	bool getEnabled(MacMenuItem *menuItem);
 
 	void setName(MacMenuItem *menuItem, const Common::String &name);
+	void setUnicodeName(MacMenuItem *menuItem, const Common::String &name, Common::CodePage cp);
 	Common::String getName(MacMenuItem *menuItem);
+	Common::String getUnicodeName(MacMenuItem *menuItem, Common::CodePage cp);
 
 	void setAction(MacMenuItem *menuItem, int actionId);
 	int getAction(MacMenuItem *menuItem);

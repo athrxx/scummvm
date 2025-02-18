@@ -153,7 +153,7 @@ protected:
 
 	int _gameFontId = -1;
 
-	byte _unicodeToMacRoman[96];
+	//byte _unicodeToMacRoman[96];
 
 	enum DelayStatus {
 		kDelayDone = 0,
@@ -274,15 +274,15 @@ public:
 
 		bool _fullRedraw = false;
 
-		Common::String _text;
+		Common::U32String _text;
 		int _oldValue = 0;
 		int _value = 0;
 
-		int drawText(Common::String text, int x, int y, int w, uint32 fg = 0, uint32 bg = 0, Graphics::TextAlign align = Graphics::kTextAlignLeft, bool wordWrap = false, int deltax = 0) const;
+		int drawText(Common::U32String text, int x, int y, int w, uint32 fg = 0, uint32 bg = 0, Graphics::TextAlign align = Graphics::kTextAlignLeft, bool wordWrap = false, int deltax = 0) const;
 		void drawBitmap(Common::Rect r, const uint16 *bitmap, uint32 color) const;
 
 	public:
-		MacWidget(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String text, bool enabled);
+		MacWidget(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String text, bool enabled, Common::CodePage encoding);
 		virtual ~MacWidget() {};
 
 		void setId(int id) { _id = id; }
@@ -343,7 +343,7 @@ public:
 		void drawCorners(Common::Rect r, CornerLine *corner, bool enabled);
 
 	public:
-		MacButton(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String text, bool enabled) : MacWidget(window, bounds, text, enabled) {}
+		MacButton(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String &text, bool enabled, Common::CodePage encoding = Common::kCodePageInvalid) : MacWidget(window, bounds, text, enabled, encoding) {}
 
 		void draw(bool drawFocused = false) override;
 
@@ -355,7 +355,7 @@ public:
 		Common::Rect _hitBounds;
 
 	public:
-		MacCheckbox(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String text, bool enabled);
+		MacCheckbox(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String &text, bool enabled, Common::CodePage encoding = Common::kCodePageInvalid);
 
 		bool findWidget(int x, int y) const override;
 		void draw(bool drawFocused = false) override;
@@ -376,8 +376,9 @@ public:
 	public:
 		MacStaticText(
 			MacGuiImpl::MacDialogWindow *window,
-			Common::Rect bounds, Common::String text,
-			bool enabled, Graphics::TextAlign alignment = Graphics::kTextAlignLeft) : MacWidget(window, bounds, text, true) {
+			Common::Rect bounds, Common::String &text,
+			bool enabled, Graphics::TextAlign alignment = Graphics::kTextAlignLeft,
+			Common::CodePage encoding = Common::kCodePageInvalid) : MacWidget(window, bounds, text, true, encoding) {
 			_alignment = alignment;
 			_fg = _black;
 			_bg = _white;
@@ -388,8 +389,9 @@ public:
 
 		void setWordWrap(bool wordWrap) { _wordWrap = wordWrap; }
 
-		void setText(Common::String text) {
-			if (text != _text) {
+		void setText(Common::String &text, Common::CodePage encoding = Common::kCodePageInvalid) {
+			Common::U32String u32Text = Common::U32String(text, encoding);
+			if (u32Text != _text) {
 				_text = text;
 				setRedraw();
 			}
@@ -429,7 +431,7 @@ public:
 		void deleteSelection();
 
 	public:
-		MacEditText(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String text, bool enabled);
+		MacEditText(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String &text, bool enabled, Common::CodePage encoding = Common::kCodePageInvalid);
 
 		void getFocus() override {}
 		void loseFocus() override {}
@@ -483,7 +485,7 @@ public:
 
 	public:
 		MacSliderBase(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, int minValue, int maxValue, int minPos, int maxPos, bool enabled)
-			: MacWidget(window, bounds, "SliderBase", enabled),
+			: MacWidget(window, bounds, "SliderBase", enabled, Common::kCodePageInvalid),
 			_minValue(minValue), _maxValue(maxValue),
 			_minPos(minPos), _maxPos(maxPos) {}
 
@@ -593,7 +595,7 @@ public:
 		void handleWheel(int distance);
 
 	public:
-		MacListBox(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::StringArray texts, bool enabled, bool contentUntouchable = true);
+		MacListBox(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::StringArray texts, bool enabled, bool contentUntouchable = true, Common::CodePage encoding = Common::kCodePageInvalid);
 		~MacListBox();
 
 		void getFocus() override {}
@@ -622,7 +624,7 @@ public:
 
 	class MacPopUpMenu : public MacWidget {
 	private:
-		Common::StringArray _texts;
+		Common::U32StringArray _texts;
 		int _textWidth;
 		bool _menuVisible = false;
 		int _selected;
@@ -630,7 +632,7 @@ public:
 		Common::Rect _popUpBounds;
 
 	public:
-		MacPopUpMenu(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String text, int textWidth, Common::StringArray texts, bool enabled);
+		MacPopUpMenu(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String &text, int textWidth, Common::StringArray &texts, bool enabled, Common::CodePage encoding = Common::kCodePageInvalid);
 		~MacPopUpMenu();
 
 		bool findWidget(int x, int y) const override;
@@ -695,7 +697,7 @@ public:
 		Common::Point _mousePos;
 		Common::Point _realMousePos;
 
-		Common::StringArray _substitutions;
+		Common::U32StringArray _substitutions;
 		Common::Array<Common::Rect> _dirtyRects;
 		bool _dirtyPalette = false;
 
@@ -738,26 +740,26 @@ public:
 
 		int findWidget(int x, int y) const;
 
-		MacGuiImpl::MacButton *addButton(Common::Rect bounds, Common::String text, bool enabled);
-		MacGuiImpl::MacCheckbox *addCheckbox(Common::Rect bounds, Common::String text, bool enabled);
-		MacGuiImpl::MacStaticText *addStaticText(Common::Rect bounds, Common::String text, bool enabled, Graphics::TextAlign alignment = Graphics::kTextAlignLeft);
-		MacGuiImpl::MacEditText *addEditText(Common::Rect bounds, Common::String text, bool enabled);
+		MacGuiImpl::MacButton *addButton(Common::Rect bounds, Common::String text, bool enabled, Common::CodePage encoding = Common::kCodePageInvalid);
+		MacGuiImpl::MacCheckbox *addCheckbox(Common::Rect bounds, Common::String &text, bool enabled, Common::CodePage encoding = Common::kCodePageInvalid);
+		MacGuiImpl::MacStaticText *addStaticText(Common::Rect bounds, Common::String &text, bool enabled, Graphics::TextAlign alignment = Graphics::kTextAlignLeft, Common::CodePage encoding = Common::kCodePageInvalid);
+		MacGuiImpl::MacEditText *addEditText(Common::Rect bounds, Common::String &text, bool enabled);
 		MacGuiImpl::MacImage *addIcon(int x, int y, int id, bool enabled);
 		MacGuiImpl::MacImage *addPicture(Common::Rect bounds, int id, bool enabled);
 		MacGuiImpl::
 		MacGuiImpl::MacSlider *addSlider(int x, int y, int h, int minValue, int maxValue, int pageSize, bool enabled);
 		MacGuiImpl::MacImageSlider *addImageSlider(int backgroundId, int handleId, bool enabled, int minX, int maxX, int minValue, int maxValue, int leftMargin = 0, int rightMargin = 0);
 		MacGuiImpl::MacImageSlider *addImageSlider(Common::Rect bounds, MacImage *handle, bool enabled, int minX, int maxX, int minValue, int maxValue);
-		MacGuiImpl::MacListBox *addListBox(Common::Rect bounds, Common::StringArray texts, bool enabled, bool contentUntouchable = false);
-		MacGuiImpl::MacPopUpMenu *addPopUpMenu(Common::Rect bounds, Common::String text, int textWidth, Common::StringArray texts, bool enabled);
+		MacGuiImpl::MacListBox *addListBox(Common::Rect bounds, Common::StringArray &texts, bool enabled, bool contentUntouchable = false);
+		MacGuiImpl::MacPopUpMenu *addPopUpMenu(Common::Rect bounds, Common::String &text, int textWidth, Common::StringArray texts, bool enabled, Common::CodePage encoding = Common::kCodePageInvalid);
 
-		void addControl(Common::Rect bounds, uint16 controlId);
+		void addControl(Common::Rect bounds, uint16 controlId, Common::CodePage encoding = Common::kCodePageInvalid);
 
-		void addSubstitution(Common::String text) { _substitutions.push_back(text); }
-		void replaceSubstitution(int nr, Common::String text) { _substitutions[nr] = text; }
+		void addSubstitution(Common::String text, Common::CodePage encoding = Common::kCodePageInvalid) { _substitutions.push_back(text.decode(encoding == Common::kCodePageInvalid ? Common::kMacRoman : encoding)); }
+		void replaceSubstitution(int nr, Common::String text, Common::CodePage encoding = Common::kCodePageInvalid) { _substitutions[nr] = text.decode(encoding == Common::kCodePageInvalid ? Common::kMacRoman : encoding); }
 
 		bool hasSubstitution(uint n) const { return n < _substitutions.size(); }
-		Common::String &getSubstitution(uint n) { return _substitutions[n]; }
+		Common::U32String &getSubstitution(uint n) { return _substitutions[n]; }
 
 		void markRectAsDirty(Common::Rect r);
 		void update(bool fullRedraw = false);
@@ -792,20 +794,20 @@ public:
 	Common::String readCString(uint8 *&data);
 	Common::String readPascalString(uint8 *&data);
 
-	int toMacRoman(int unicode) const;
-
 	void setPaletteDirty();
 	void updatePalette();
 
 	virtual bool handleEvent(Common::Event event);
 
 	static void menuCallback(int id, Common::String &name, void *data);
+	static void menuCallbackU32(int id, Common::U32String &name, void *data);
 	virtual bool initialize();
 	void updateWindowManager();
 	virtual void updateMenus();
 
 	const Graphics::Font *getFont(FontId fontId);
 	virtual const Graphics::Font *getFontByScummId(int32 id) = 0;
+	Common::CodePage getCodePage() const;
 
 	bool loadIcon(int id, Graphics::Surface **icon, Graphics::Surface **mask);
 	Graphics::Surface *loadPict(int id);
