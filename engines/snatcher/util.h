@@ -19,45 +19,20 @@
 *
 */
 
-#include "common/system.h"
-#include "snatcher/sound_device.h"
-#include "snatcher/util.h"
+
+#ifndef SNATCHER_UTIL_H
+#define SNATCHER_UTIL_H
+
+#include "common/scummsys.h"
 
 namespace Snatcher {
+namespace Util {
 
-class NullSoundDevice : public SoundDevice {
-public:
-	NullSoundDevice() : SoundDevice(), _playing(false) {}
-	~NullSoundDevice() override {}
+extern uint32 decodeSCDData(const uint8 *src, uint8 *dst);
 
-	void musicPlay(int track) override { }
-	void musicStop() override { }
-	bool musicIsPlaying() const override;
-	uint32 musicGetTime() const override;
+extern uint32 makeBCDTimeStamp(uint32 msecs);
 
-	void pcmPlayEffect(int track) override;
-	void pcmDoCommand(int cmd, int arg) override;
-private:
-	bool _playing;
-};
-
-bool NullSoundDevice::musicIsPlaying() const {
-	return true;
-}
-
-uint32 NullSoundDevice::musicGetTime() const {
-	uint32 relTime = 0;
-	return Util::makeBCDTimeStamp(relTime);
-}
-
-void NullSoundDevice::pcmPlayEffect(int track) {
-}
-
-void NullSoundDevice::pcmDoCommand(int cmd, int arg) {
-}
-
-SoundDevice *SoundDevice::createNullSoundDevice() {
-	return new NullSoundDevice();
-}
-
+} // End of namespace Util
 } // End of namespace Snatcher
+
+#endif // SNATCHER_SOUND_H
