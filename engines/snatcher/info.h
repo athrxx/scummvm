@@ -19,23 +19,20 @@
 *
 */
 
+#ifndef SNATCHER_INFO_H
+#define SNATCHER_INFO_H
 
-#ifndef SNATCHER_UTIL_H
-#define SNATCHER_UTIL_H
 
 #include "common/scummsys.h"
 
 namespace Snatcher {
-namespace Util {
 
-extern uint32 decodeSCDData(const uint8 *src, uint8 *dst);
+struct VMInfo {
+	VMInfo() : dropFrames(0), audioSync(0) {}
+	int16 dropFrames;
+	uint32 audioSync;
+};
 
-extern uint32 makeBCDTimeStamp(uint32 msecs);
-
-extern void rngReset();
-extern uint16 rngMakeNumber();
-
-} // End of namespace Util
 } // End of namespace Snatcher
 
-#endif // SNATCHER_SOUND_H
+#endif // SNATCHER_INFO_H
