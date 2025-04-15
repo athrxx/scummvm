@@ -19,42 +19,20 @@
 *
 */
 
-#ifndef SNATCHER_SOUND_DEVICE_H
-#define SNATCHER_SOUND_DEVICE_H
 
-#include "audio//mididrv.h"
-#include "common/platform.h"
+#ifndef SNATCHER_STATICRES_H
+#define SNATCHER_STATICRES_H
+
+#include "common/scummsys.h"
 
 namespace Snatcher {
 
-class SoundDevice {
-public:
-	virtual ~SoundDevice() {}
+namespace StaticRes_SCD {
 
-	virtual void musicPlay(int track) = 0;
-	virtual void musicStop() = 0;
-	virtual bool musicIsPlaying() const = 0;
-	virtual uint32 musicGetTime() const = 0;
+	extern const uint8 *const _bootSeqData[4];
 
-	virtual void fmStartSound(int track) = 0;
-
-	virtual void pcmPlayEffect(int track) = 0;
-	virtual void pcmDoCommand(int cmd, int arg) = 0;
-
-	virtual void pause(bool toggle) = 0;
-
-protected:
-	SoundDevice() : _musicStartTime(0) {}
-
-	uint32 _musicStartTime;
-
-private:
-	static SoundDevice *createSegaSoundDevice();
-
-public:
-	static SoundDevice *create(Common::Platform platform, int soundOptions);
-};
+} // End of namespace StaticRes
 
 } // End of namespace Snatcher
 
-#endif // SNATCHER_SOUND_DEVICE_H
+#endif // SNATCHER_SOUND_H
