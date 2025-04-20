@@ -121,6 +121,8 @@ public:
 	~FIO();
 
 	SceneModule *loadModule(int index);
+	const uint8 *fileData(int index, uint32 *fileSize);
+	uint8 *fileData(const Common::Path &file, uint32 *fileSize);
 
 	enum EndianMode {
 		kPlatformEndianness = 0,
@@ -128,11 +130,9 @@ public:
 		kForceBE
 	};
 
+private:
 	Common::SeekableReadStream *readStream(const Common::Path &file);
 	Common::SeekableReadStreamEndian *readStreamEndian(const Common::Path &file, EndianMode em = kPlatformEndianness);
-	uint8 *fileData(const Common::Path &file, uint32 *fileSize);
-
-private:
 	Common::SearchSet _files;
 
 	SnatcherEngine *_vm;

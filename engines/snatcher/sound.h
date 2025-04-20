@@ -33,15 +33,22 @@ public:
 	SoundEngine(Common::Platform platform, int soundOptions);
 	~SoundEngine();
 
+	enum SoundFileType : int {
+		kFMData = 0,
+		kPCMData1,
+		kPCMData2
+	};
+
+	void loadSoundFile(int type, const uint8 *data, uint32 dataSize);
+
 	void musicPlay(int track);
 	void musicStop();
 	bool musicIsPlaying() const;
 	uint32 musicGetTime() const;
 
-	void fmStartSound(int track);
-
-	void pcmPlayEffect(int track);
-	void pcmDoCommand(int cmd, int arg);
+	void fmSendCommand(int cmd, int arg);
+	void pcmSendCommand(int cmd, int arg);
+	void pcmSendCommand2(int cmd);
 
 	void pause(bool toggle);
 

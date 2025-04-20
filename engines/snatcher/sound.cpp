@@ -33,6 +33,10 @@ SoundEngine::~SoundEngine() {
 	delete _dev;
 }
 
+void SoundEngine::loadSoundFile(int type, const uint8 *data, uint32 dataSize) {
+	_dev->loadSoundFile(type, data, dataSize);
+}
+
 void SoundEngine::musicPlay(int track) {
 	_dev->musicPlay(track);
 }
@@ -49,16 +53,49 @@ uint32 SoundEngine::musicGetTime() const {
 	return _dev->musicGetTime();
 }
 
-void SoundEngine::fmStartSound(int track) {
-	_dev->fmStartSound(track);
+void SoundEngine::fmSendCommand(int cmd, int arg) {
+	if (cmd >= 241) {
+		switch (cmd) {
+		case 241:
+			break;
+		case 242:
+			break;
+		case 243:
+			break;
+		case 244:
+			break;
+		default:
+			break;
+		}
+	} else if (cmd < 123) {
+		if (cmd > 49 && cmd < 63) {
+		} else {
+
+		}
+		
+	}
+	_dev->fmSendCommand(cmd);
 }
 
-void SoundEngine::pcmPlayEffect(int track) {
-	_dev->pcmPlayEffect(track);
+void SoundEngine::pcmSendCommand(int cmd, int arg) {
+	if (cmd >= 248) {
+		switch (cmd) {
+		case 252:
+			break;
+		case 253:
+			break;
+		case 255:
+			break;
+		default:
+			break;
+		}
+	} else {
+		_dev->pcmSendCommand(cmd, arg);
+	}	
 }
 
-void SoundEngine::pcmDoCommand(int cmd, int arg) {
-	_dev->pcmDoCommand(cmd, arg);
+void SoundEngine::pcmSendCommand2(int cmd) {
+
 }
 
 void SoundEngine::pause(bool toggle) {

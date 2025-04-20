@@ -31,15 +31,23 @@ class SoundDevice {
 public:
 	virtual ~SoundDevice() {}
 
+	enum SoundFileType : int {
+		kFMData = 0,
+		kPCMData1,
+		kPCMData2
+	};
+
+	virtual void loadSoundFile(int type, const uint8 *data, uint32 dataSize) = 0;
+
 	virtual void musicPlay(int track) = 0;
 	virtual void musicStop() = 0;
 	virtual bool musicIsPlaying() const = 0;
 	virtual uint32 musicGetTime() const = 0;
 
-	virtual void fmStartSound(int track) = 0;
+	virtual void fmSendCommand(int track) = 0;
 
 	virtual void pcmPlayEffect(int track) = 0;
-	virtual void pcmDoCommand(int cmd, int arg) = 0;
+	virtual void pcmSendCommand(int cmd, int arg) = 0;
 
 	virtual void pause(bool toggle) = 0;
 

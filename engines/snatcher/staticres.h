@@ -29,7 +29,7 @@ namespace Snatcher {
 
 namespace StaticRes_SCD {
 
-	extern const uint8 *const _bootSeqData[4];
+	extern const uint8 *const _bootSeqData[5];
 
 } // End of namespace StaticRes
 

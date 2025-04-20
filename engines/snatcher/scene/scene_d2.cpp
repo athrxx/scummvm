@@ -51,19 +51,19 @@ bool _loadCancelled;
 SH_HEAD_END(D2)
 
 SH_IMP_FRMTBL(D2) {
-	SH_FRM(00),
-	SH_FRM(01),
-	SH_FRM(02),
-	SH_FRM(03),
-	SH_FRM(04),
-	SH_FRM(05),
-	SH_FRM(06),
-	SH_FRM(07),
-	SH_FRM(08),
-	SH_FRM(09),
-	SH_FRM(10),
-	SH_FRM(11),
-	SH_FRM(12)
+	SH_FRM(D2, 00),
+	SH_FRM(D2, 01),
+	SH_FRM(D2, 02),
+	SH_FRM(D2, 03),
+	SH_FRM(D2, 04),
+	SH_FRM(D2, 05),
+	SH_FRM(D2, 06),
+	SH_FRM(D2, 07),
+	SH_FRM(D2, 08),
+	SH_FRM(D2, 09),
+	SH_FRM(D2, 10),
+	SH_FRM(D2, 11),
+	SH_FRM(D2, 12)
 };
 
 SH_IMP_CTOR(D2), _option(0), _loadCancelled(false) {
@@ -97,8 +97,8 @@ int16 _sceneState_ua_3 = 0;
 SH_IMPL_FRM(D2, 00) {
 	switch (state.frameState) {
 	case 0:
-		//enqueueCommunicationStatus2Command(_state_ua_1 ? 0xF3 : 0xF4, 0);
-		_vm->sound()->pcmDoCommand(_state_ua_1 ? 0xFC : 0xFD, -1);
+		_vm->sound()->fmSendCommand(_state_ua_1 ? 243 : 244, 0);
+		_vm->sound()->pcmSendCommand(_state_ua_1 ? 252 : 253, -1);
 		//_d2state = 0;
 		//buramCheck();
 		++state.frameState;
@@ -284,7 +284,7 @@ SH_IMPL_FRM(D2, 09) {
 		++state.frameNo;
 		state.frameState = 0;
 		_bua3 = 56;
-		//enqueueCommunicationStatus2Command(0);
+		_vm->sound()->fmSendCommand(56, 0);
 		_vm->gfx()->setAnimControlFlags(16, GraphicsEngine::kAnimPause | GraphicsEngine::kAnimHide);
 		_vm->gfx()->setAnimControlFlags(17, GraphicsEngine::kAnimPause | GraphicsEngine::kAnimHide);
 		_option = 0;
@@ -321,6 +321,8 @@ SH_IMPL_FRM(D2, 10) {
 		_vm->gfx()->setAnimFrame(25, _saveFileCurID << 2);
 
 		if (_vm->inputFlag() & 0x80) {
+			_bua3 = 56;
+			_vm->sound()->fmSendCommand(56, 0);
 			_loadCancelled = 0;
 			fin = true;
 		} else if (_vm->inputFlag() & 0x10) {
@@ -404,7 +406,7 @@ SH_IMPL_FRM(D2, 11) {
 		else if (_vm->inputFlag() & 0x70)
 			fin = (_option == 4) ? 1 : (_option == 3 ? 3 : 0);
 		if (fin) {
-			_vm->sound()->pcmDoCommand(55 + fin, -1);
+			_vm->sound()->pcmSendCommand(55 + fin, -1);
 			_vm->gfx()->enqueuePaletteEvent(_module->getPtr(0x290F2));
 			state.counter = 10;
 			if (fin == 1) {

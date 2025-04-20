@@ -95,7 +95,8 @@ bool SnatcherEngine::initGfx(Common::Platform platform, bool use8BitColorMode) {
 			error("%s(): No suitable color mode found", __FUNCTION__);
 	}
 
-	if (_gfx = new GraphicsEngine(&pxf, _system, platform, _gfxInfo)) {
+	_gfx = new GraphicsEngine(&pxf, _system, platform, _gfxInfo);
+	if (_gfx) {
 		initGraphics(_gfx->screenWidth(), _gfx->screenHeight(), &pxf);
 		return true;
 	}
@@ -104,7 +105,23 @@ bool SnatcherEngine::initGfx(Common::Platform platform, bool use8BitColorMode) {
 }
 
 bool SnatcherEngine::initSound(Common::Platform platform, int soundOptions) {
-	return (_snd = new SoundEngine(platform, soundOptions));
+	_snd = new SoundEngine(platform, soundOptions);
+
+	if (!_snd)
+		return false;
+
+	uint32 dataSize = 0;
+	const uint8 *data = _fio->fileData(53, &dataSize);
+	_snd->loadSoundFile(SoundEngine::kFMData, data, dataSize);
+	delete[] data;
+	data = _fio->fileData(56, &dataSize);
+	_snd->loadSoundFile(SoundEngine::kPCMData1, data, dataSize);
+	delete[] data;
+	data = _fio->fileData(54, &dataSize);
+	_snd->loadSoundFile(SoundEngine::kPCMData2, data, dataSize);
+	delete[] data;
+
+	return true;
 }
 
 void SnatcherEngine::playBootSequence() {
@@ -121,10 +138,10 @@ void SnatcherEngine::playBootSequence() {
 		switch (curFrame) {
 		case 0:
 		case -1:
-			_snd->fmStartSound(242);
+			_snd->fmSendCommand(242, -1);
 			break;
 		case 7:
-			_snd->fmStartSound(63);
+			_snd->fmSendCommand(63, -1);
 			break;
 		default:
 			break;
@@ -329,7 +346,7 @@ void SnatcherEngine::updateModuleState(GameState &state) {
 		case 0:
 			state.frameNo = 0;
 			++state.modProcessSub;
-			_snd->pcmPlayEffect(30);
+			_snd->pcmSendCommand2(30);
 			break;
 		case 1:
 			if (!(_word_unk_Flags & 0x0F))
@@ -469,6 +486,7 @@ void SnatcherEngine::updateModuleState(GameState &state) {
 		default:
 			break;
 		}
+		break;
 	case 7:
 		switch (state.modProcessSub) {
 		case 0:

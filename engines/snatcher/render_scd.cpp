@@ -1100,7 +1100,7 @@ int Renderer_SCD::anim_36(AnimObject &a, const uint8 *data) {
 
 int Renderer_SCD::anim_37(AnimObject &a, const uint8 *data) {
 	static const uint8 cmd[] = { 0x25, 0x00 };
-	ResourcePointer r(data, 0);
+	ResourcePointer r(cmd, 0);
 	enqueueDrawCommands(r);
 	return 1;
 }

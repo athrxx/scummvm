@@ -33,15 +33,17 @@ public:
 	SegaSoundDevice();
 	~SegaSoundDevice() override {}
 
+	void loadSoundFile(int type, const uint8 *data, uint32 dataSize) override;
+
 	void musicPlay(int track) override;
 	void musicStop() override;
 	bool musicIsPlaying() const override;
 	uint32 musicGetTime() const override;
 
-	void fmStartSound(int track) override;
+	void fmSendCommand(int track) override;
 
 	void pcmPlayEffect(int track) override;
-	void pcmDoCommand(int cmd, int arg) override;
+	void pcmSendCommand(int cmd, int arg) override;
 
 	void pause(bool toggle) override;
 
@@ -52,6 +54,20 @@ private:
 
 SegaSoundDevice::SegaSoundDevice() : SoundDevice(), _lastTrack(-1), _pauseStartTime(0) {
 
+}
+
+void SegaSoundDevice::loadSoundFile(int type, const uint8 *data, uint32 dataSize) {
+	switch (type) {
+	case kFMData:
+		break;
+	case kPCMData1:
+		break;
+	case kPCMData2:
+		break;
+	default:
+		error("%s(): Unknown sound file type %d", __FUNCTION__, type);
+		break;
+	}
 }
 
 void SegaSoundDevice::musicPlay(int track) {
@@ -75,14 +91,14 @@ uint32 SegaSoundDevice::musicGetTime() const {
 	return Util::makeBCDTimeStamp(relTime);
 }
 
-void SegaSoundDevice::fmStartSound(int track) {
+void SegaSoundDevice::fmSendCommand(int track) {
 
 }
 
 void SegaSoundDevice::pcmPlayEffect(int track) {
 }
 
-void SegaSoundDevice::pcmDoCommand(int cmd, int arg) {
+void SegaSoundDevice::pcmSendCommand(int cmd, int arg) {
 }
 
 
