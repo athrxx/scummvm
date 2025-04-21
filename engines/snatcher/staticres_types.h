@@ -19,40 +19,26 @@
 *
 */
 
-#ifndef SNATCHER_DETECTION_H
-#define SNATCHER_DETECTION_H
 
-#include "engines/advancedDetector.h"
+#ifndef SNATCHER_STATICRES_TYPES_H
+#define SNATCHER_STATICRES_TYPES_H
+
+#include "common/scummsys.h"
 
 namespace Snatcher {
 
-enum {
-	GI_SNATCHER = 0
-};
+namespace StaticRes_SCD {
 
-struct GameDescription {
-	uint8 gameID;
-	int soundOptions;
-	Common::Language lang;
-	Common::Platform platform;
-	bool isBigEndian;
+	struct FMSoundTrackDef {
+		uint8 a;
+		uint8 poly;
+		uint8 chan;
+		uint8 prio;
+		uint8 track;
+	};
 
-	// language overwrites of fan translations (only needed for multilingual games)
-	Common::Language fanLang;
-	Common::Language replacedLang;
-	
-};
+} // End of namespace StaticRes
 
 } // End of namespace Snatcher
 
-namespace {
-
-struct SnatcherGameDescription {
-	AD_GAME_DESCRIPTION_HELPERS(ad_desc);
-	ADGameDescription ad_desc;
-	Snatcher::GameDescription ex_desc;
-};
-
-} // End of anonymous namespace
-
-#endif // SNATCHER_DETECTION_H
+#endif // SNATCHER_SOUND_H
