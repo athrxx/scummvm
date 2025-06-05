@@ -20,23 +20,9 @@
 */
 
 
-#ifndef SNATCHER_UTIL_H
-#define SNATCHER_UTIL_H
+#include "snatcher/saveload.h"
 
-#include "common/scummsys.h"
 
 namespace Snatcher {
-namespace Util {
 
-extern uint32 decodeSCDData(const uint8 *src, uint8 *dst);
-
-extern uint32 makeBCDTimeStamp(uint32 msecs);
-
-extern void rngReset();
-extern uint16 rngMakeNumber();
-extern uint16 rngGetNumberFromRange(uint16 min, uint16 range);
-
-} // End of namespace Util
 } // End of namespace Snatcher
-
-#endif // SNATCHER_SOUND_H
