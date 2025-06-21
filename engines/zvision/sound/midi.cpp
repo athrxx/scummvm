@@ -36,7 +36,7 @@ MidiManager::MidiManager() {
 		_available = false;
 	} else {
 		Common::String driverName = MidiDriver::getDeviceString(dev, MidiDriver::DeviceStringType::kDriverName);
-		Common::String deviceName = MidiDriver::getDeviceString(dev, MidiDriver::DeviceStringType::kDeviceName);
+		Common::String deviceName = MidiDriver::getDeviceString(dev, MidiDriver::DeviceStringType::kDeviceFullName);
 		_mt32 = MidiDriver::getMusicType(dev) == MT_MT32;
 		debugC(1, kDebugSound, "MIDI opened, driver type: %s, device name: %s", driverName.c_str(), deviceName.c_str());
 		_available = true;
