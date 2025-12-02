@@ -23,5 +23,6 @@
     "sdl2",
     "sdl2-net",
     "zlib"
-  ]
+  ],
+  "builtin-baseline": "8b174ea37062b5a5531f81357c2a2a7f7217f4b8"
 }
