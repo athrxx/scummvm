@@ -110,7 +110,7 @@ void VSTMidiDriver::sysEx(const byte *msg, uint16 length) {
 	_intf->sysex(msg, length);
 }
 
-void VSTMidiDriver::metaEvent(byte type, byte *data, uint16 len) {
+void VSTMidiDriver::metaEvent(byte type, const byte *data, uint16 len) {
 	if (!isOpen() || type != 0x51 || len != 3)
 		return;
 	_intf->setTempo(data[0] << 16 | data[1] << 8 | data[2]);

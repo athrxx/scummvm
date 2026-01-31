@@ -42,7 +42,7 @@ public:
 
 	void send(uint32 msg) override;
 	void sysEx(const byte *msg, uint16 length) override;
-	void metaEvent(byte type, byte *data, uint16 len) override;
+	void metaEvent(byte type, const byte *data, uint16 len) override;
 
 	int getRate() const override { return _outputRate; }
 	bool isStereo() const override { return true; }
