@@ -50,7 +50,7 @@ public:
 	}
 
 	MusicDevices getDevices() const override;
-	bool checkDevice(MidiDriver::DeviceHandle) const override;
+	bool checkDevice(MidiDriver::DeviceHandle hdl, int checkFlags, bool quiet) const override;
 	Common::Error createInstance(MidiDriver **mididriver, MidiDriver::DeviceHandle dev) const override;
 
 	VST::PluginsSearchResult &getSearchResult() const { return _pluginsSearchResult; }
@@ -74,7 +74,7 @@ MusicDevices VSTSynthPlugin::getDevices() const {
 	return devices;
 }
 
-bool VSTSynthPlugin::checkDevice(MidiDriver::DeviceHandle) const {
+bool VSTSynthPlugin::checkDevice(MidiDriver::DeviceHandle hdl, int checkFlags, bool quiet) const {
 	return true;
 }
 
