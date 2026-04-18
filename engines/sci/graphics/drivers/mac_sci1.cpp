@@ -63,7 +63,7 @@ class SCI1_MacGfxDriver final : public GfxDefaultDriver {
 public:
 	SCI1_MacGfxDriver(uint16 screenWidth, uint16 screenHeight, bool rgbRendering);
 	~SCI1_MacGfxDriver() override;
-	void initScreen(const Graphics::PixelFormat *format) override;
+	bool initScreen(const Graphics::PixelFormat *format) override;
 	void replaceCursor(const void*, uint, uint, int, int, uint32) override;
 	void replaceMacCursor(const Graphics::Cursor *cursor) override;
 private:
@@ -76,10 +76,12 @@ SCI1_MacGfxDriver::SCI1_MacGfxDriver(uint16 screenWidth, uint16 screenHeight, bo
 SCI1_MacGfxDriver::~SCI1_MacGfxDriver() {
 }
 
-void SCI1_MacGfxDriver::initScreen(const Graphics::PixelFormat *format) {
-	GfxDefaultDriver::initScreen(format);
+bool SCI1_MacGfxDriver::initScreen(const Graphics::PixelFormat *format) {
+	if (!GfxDefaultDriver::initScreen(format))
+		return false;
 	if (!_compositeBuffer)
 		_compositeBuffer = new byte[_screenW * _screenH * _pixelSize]();
+	return _compositeBuffer != nullptr;
 }
 
 void SCI1_MacGfxDriver::replaceCursor(const void*, uint, uint, int, int, uint32) {
@@ -104,7 +106,7 @@ void SCI1_MacGfxDriver::replaceMacCursor(const Graphics::Cursor *c) {
 	hotX <<= 1;
 	hotY <<= 1;
 
-	CursorMan.replaceCursor(_compositeBuffer, w, h, hotX, hotY, c->getKeyColor(), false, nullptr, c->getMask());
+	CursorMan.replaceCursor(_compositeBuffer, w, h, hotX, hotY, c->getKeyColor(), nullptr, c->getMask());
 	if (c->getPalette())
 		CursorMan.replaceCursorPalette(c->getPalette(), c->getPaletteStartIndex(), c->getPaletteCount());
 }
