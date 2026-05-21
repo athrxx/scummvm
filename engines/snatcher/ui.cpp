@@ -148,8 +148,6 @@ bool UI::displayDialog(int sceneInfo, int sceneTextOffset, uint16 inputFlags) {
 
 		_sceneTextOffsCur = _sceneTextOffsStart;
 		_textLineEnd = 0;
-		//_gfxOps10_sub_974B = _gfxOps10_sub_974E = 0;
-		//_gfxOps10_subword_974C = 0;
 		_textColor = 1;
 
 		_gfx->transitionCommand(_gfx->getVerbAreaType() == 0 ? 15 : (_gfx->getVerbAreaType() == 1 ? 20 : 22));
@@ -490,18 +488,142 @@ void UI::setVerbInterfaceMode(uint16 mode) {
 		_flashLight.posX = _flashLight.posY = 0;
 }
 
-void UI::loadState(Common::SeekableReadStream *in) {
+void UI::loadState(Common::SeekableReadStream *in, SaveFlags flags) {
 	if (in->readUint32BE() != MKTAG('S', 'N', 'A', 'T'))
 		error("%s(): Save file invalid or corrupt", __FUNCTION__);
 	_verbInterfaceMode = in->readUint16BE();
 	_verbsInterpreterMode = in->readUint16BE();
 	_progress = _progress2 = -1;
+
+	if (flags & kSaveFlagsTempData)
+		return;
+
+	//_progress2 = in->readSint16BE();
+	//_progress2 = -1;
+	//_headLineYOffset;
+	//_sceneTextOffsCur;
+	//_sceneInfo;
+	//_sceneTextOffset;
+	//_sceneTextOffsStart;
+	_videoPhoneMode = in->readSint16BE();
+	//_textInputColumnCur = in->readSint16BE();
+	_textInputColumnMax = in->readSint16BE();
+	//_hilitePosX = in->readSint16BE();
+	//_hilitePosY = in->readSint16BE();
+
+
+	//_textColor;
+	//_textY;
+	//_sceneId;
+	//_textLineBreak;
+	//_textLineEnd;
+	//_waitCursorFrame;
+	//_waitCursorAnimDelay;
+	//_controllerCfg;
+	//_lastVerbFirstPage= in->readByte();
+	//_numVerbsFirstPage= in->readByte();
+	//_numVerbsLastPage= in->readByte();
+	//_lastVerbLastPage= in->readByte();
+	_prevSelectedVerb= in->readByte();
+	//_numVerbsMax= in->readByte();
+	//_verbsTabCurPage= in->readByte();
+	//_textInputMarginLeft= in->readByte();
+	//_textInputCursorState= in->readByte();
+	//_textInputCursorBlinkCnt= in->readByte();
+	_selectedVerb= in->readByte();
+	/*_vkeybPosTotal= in->readByte();
+	_vkeybColumnWidth= in->readByte();
+	_verbsTabOffsX= in->readByte();
+	_verbsTabOffsY= in->readByte();
+	_lastHiliteVerb= in->readByte();
+	_hiliteVerb= in->readByte();
+	_lastVerbDrawn= in->readByte();*/
+
+	/**_dialogTextBuffer;
+	*_scriptTextResource;
+	*_verbTextBuffer;
+	*_underscoreStr;
+	*_textInputStr;
+	*_verbsTabLayoutMap;
+	*_scriptVerbsArray;
+	*_scriptSentenceArray;*/
+
+	_vkeybVisible = in->readByte();
+
+	_flashLight.inputFlags= in->readByte();
+	_flashLight.posData= in->readByte();
+	_flashLight.posX = in->readSint32BE();
+	_flashLight.posY = in->readSint32BE();
 }
 
-void UI::saveState(Common::SeekableWriteStream *out) {
+void UI::saveState(Common::SeekableWriteStream *out, SaveFlags flags) {
 	out->writeUint32BE(MKTAG('S', 'N', 'A', 'T'));
 	out->writeUint16BE(_verbInterfaceMode);
 	out->writeUint16BE(_verbsInterpreterMode);
+
+	if (flags & kSaveFlagsTempData)
+		return;
+
+	//out->writeSint16BE(_progress2);
+
+	//_headLineYOffset;
+	//_sceneTextOffsCur;
+	//_sceneInfo;
+	//_sceneTextOffset;
+	//_sceneTextOffsStart;
+	out->writeSint16BE(_videoPhoneMode);
+	//out->writeSint16BE(_textInputColumnCur);
+	out->writeSint16BE(_textInputColumnMax);
+	//out->writeSint16BE(_hilitePosX);
+	//out->writeSint16BE(_hilitePosY);
+
+
+	//_textColor;
+	//_textY;
+	//_sceneId;
+	//_textLineBreak;
+	//_textLineEnd;
+	//_waitCursorFrame;
+	//_waitCursorAnimDelay;
+	//_controllerCfg;
+	//out->writeByte(_lastVerbFirstPage);
+	//out->writeByte(_numVerbsFirstPage);
+	//out->writeByte(_numVerbsLastPage);
+	//out->writeByte(_lastVerbLastPage);
+	out->writeByte(_prevSelectedVerb);
+	//out->writeByte(_numVerbsMax);
+	/*out->writeByte(_verbsTabCurPage);
+	out->writeByte(_textInputMarginLeft);
+	out->writeByte(_textInputCursorState);
+	out->writeByte(_textInputCursorBlinkCnt);*/
+	out->writeByte(_selectedVerb);
+	/*out->writeByte(_vkeybPosTotal);
+	out->writeByte(_vkeybColumnWidth);
+	out->writeByte(_verbsTabOffsX);
+	out->writeByte(_verbsTabOffsY);
+	out->writeByte(_lastHiliteVerb);
+	out->writeByte(_hiliteVerb);
+	out->writeByte(_lastVerbDrawn);*/
+
+	/**_dialogTextBuffer;
+	*_scriptTextResource;
+	*_verbTextBuffer;
+	*_underscoreStr;
+	*_textInputStr;
+	*_verbsTabLayoutMap;
+	*_scriptVerbsArray;
+	*_scriptSentenceArray;*/
+
+	out->writeByte(_vkeybVisible ? 1 : 0);
+
+	out->writeByte(_flashLight.inputFlags);
+	out->writeByte(_flashLight.posData);
+	out->writeSint32BE(_flashLight.posX);
+	out->writeSint32BE(_flashLight.posY);
+}
+
+bool UI::canSaveGameStateCurrently() const {
+	return true;
 }
 
 void UI::printDialogStringHead() {

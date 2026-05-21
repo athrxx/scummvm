@@ -36,7 +36,7 @@
 
 namespace Snatcher {
 
-CmdQueue::CmdQueue(SnatcherEngine *vm) : _vm(vm), _data(nullptr), _readPos(0), _writePos(nullptr), _enable(false), _progress(-1), _currentOpcode(0),  _counter(0), _state(nullptr), _opcodes() {
+CmdQueue::CmdQueue(SnatcherEngine *vm) : _vm(vm), _data(nullptr), _readPos(nullptr), _lastReadPos(nullptr), _writePos(nullptr), _enable(false), _progress(-1), _currentOpcode(0),  _counter(0), _state(nullptr), _restoreData(nullptr), _restoreDataSize(0), _opcodes() {
 	_data = new uint16[256]();
 	makeFunctions();
 	reset();
@@ -44,6 +44,7 @@ CmdQueue::CmdQueue(SnatcherEngine *vm) : _vm(vm), _data(nullptr), _readPos(0), _
 
 CmdQueue::~CmdQueue() {
 	delete[] _data;
+	delete[] _restoreData;
 	for (Common::Array<CmdQueOpcode*>::iterator i = _opcodes.begin(); i != _opcodes.end(); ++ i)
 		delete *i;
 }
@@ -51,6 +52,7 @@ CmdQueue::~CmdQueue() {
 void CmdQueue::reset() {
 	memset(_data, 0, 256);
 	_readPos = _writePos = _data;
+	_lastReadPos = nullptr;
 	_enable = false;
 	_progress = -1;
 }
@@ -72,6 +74,7 @@ void CmdQueue::run(GameState &state) {
 
 	do {
 		if (_progress == -1) {
+			_lastReadPos = _readPos;
 			_currentOpcode = *_readPos++;
 			_progress = 0;
 		}
@@ -86,11 +89,40 @@ void CmdQueue::run(GameState &state) {
 void CmdQueue::loadState(Common::SeekableReadStream *in) {
 	if (in->readUint32BE() != MKTAG('S', 'N', 'A', 'T'))
 		error("%s(): Save file invalid or corrupt", __FUNCTION__);
+
+	_enable = in->readByte() != 0;
+	if (!_enable)
+		return;
+
+	delete[] _restoreData;
+	_restoreDataSize = in->readUint16BE();
+	_restoreData = new uint16[_restoreDataSize]();
+	assert(_restoreData);
+	for (int i = 0; i < _restoreDataSize; ++i)
+		_restoreData[i] = in->readUint16BE();
 }
 
 void CmdQueue::saveState(Common::SeekableWriteStream *out) {
 	out->writeUint32BE(MKTAG('S', 'N', 'A', 'T'));
 
+	out->writeByte(_enable ? 1 : 0);
+	if (!_enable)
+		return;
+
+	uint16 len = 0;
+	for (const uint16 *p = _data; p < _writePos; ++p)
+		++len;
+	out->writeUint16BE(len);
+	for (const uint16 *p = _data; p < _writePos; ++p)
+		out->writeUint16BE(*p);
+}
+
+void CmdQueue::appendRestoreData() {
+	for (int i = 0; i < _restoreDataSize; ++i)
+		*_writePos++ = _restoreData[i];
+	delete[] _restoreData;
+	_restoreData = nullptr;
+	_restoreDataSize = 0;
 }
 
 void CmdQueue::makeFunctions() {
@@ -445,7 +477,7 @@ void CmdQueue::m_pcmBlock(const uint16 *&data) {
 void CmdQueue::m_saveGame(const uint16 *&data) {
 	int slot = *data++;
 	Common::String desc(Common::String::format("SNATCHER_%02d", slot));
-	_vm->saveGameState(slot, desc);
+	_vm->_saveMan->requestSave(slot, desc, true);
 	_progress = -1;
 }
 
@@ -556,14 +588,29 @@ void ScriptEngine::processInput() {
 	ARR_POS(1) = 0;
 }
 
-void ScriptEngine::loadState(Common::SeekableReadStream *in, Script &script, bool onlyTempData) {
+void ScriptEngine::loadState(Common::SeekableReadStream *in, Script &script, SaveFlags flags) {
 	if (in->readUint32BE() != MKTAG('S', 'N', 'A', 'T'))
 		error("%s(): Save file invalid or corrupt", __FUNCTION__);
 
-	if (!onlyTempData) {
-		uint16 *d = reinterpret_cast<uint16*>(_arrayData);
-		for (int i = 0; i < 128; ++i)
-			d[i] = in->readUint16BE();
+	if (!(flags & kSaveFlagsTempData)) {
+		if (flags & kSaveFlagsScriptedSave) {
+			uint8 num = in->readByte();
+			ARR_POS(4) = 0;
+			for (int i = 0; i < num; ++i) {
+				if (!setArrayLastEntry(4, in->readUint16BE()))
+					error("%s(): Out of bounds", __FUNCTION__);
+			}
+			ARR_POS(0) = 0;
+			ARR_POS(1) = 0;
+			ARR_POS(2) = 0;
+			ARR_POS(3) = 0;
+			ARR_POS(5) = 0;
+
+		} else {
+			uint16 *d = reinterpret_cast<uint16*>(_arrayData);
+			for (int i = 0; i < 128; ++i)
+				d[i] = in->readUint16BE();
+		}
 		in->read(_flagsTable, 352);
 
 		script.sentenceDone = in->readByte();
@@ -573,23 +620,30 @@ void ScriptEngine::loadState(Common::SeekableReadStream *in, Script &script, boo
 	script.curFileNo = in->readByte();
 	script.curGfxScript = in->readSint16BE();
 
-	if (!onlyTempData) {
+	if (!(flags & kSaveFlagsTempData)) {
 		script.curPos = in->readUint16BE();
-		ARR_POS(0) = 0;
-		ARR_POS(1) = 0;
-		ARR_POS(2) = 0;
-		ARR_POS(3) = 0;
-		ARR_POS(5) = 0;
+		script.newPos = in->readUint16BE();
 	}
 }
 
-void ScriptEngine::saveState(Common::SeekableWriteStream *out, Script &script, bool onlyTempData) {
+void ScriptEngine::saveState(Common::SeekableWriteStream *out, Script &script, SaveFlags flags) {
 	out->writeUint32BE(MKTAG('S', 'N', 'A', 'T'));
 
-	if (!onlyTempData) {
-		const uint16 *s = reinterpret_cast<const uint16*>(_arrayData);
-		for (int i = 0; i < 128; ++i)
-			out->writeUint16BE(s[i]);
+	if (!(flags & kSaveFlagsTempData)) {
+		if (flags & kSaveFlagsScriptedSave) {
+			out->writeByte(ARR_POS(4));
+			for (int i = 0; i < ARR_POS(4); ++i) {
+				uint16 val = 0;
+				if (getArrayEntry(4, i, val))
+					out->writeUint16BE(val);
+				else
+					error("%s(): Out of bounds", __FUNCTION__);
+			}
+		} else {
+			const uint16 *s = reinterpret_cast<const uint16*>(_arrayData);
+			for (int i = 0; i < 128; ++i)
+				out->writeUint16BE(s[i]);
+		}
 		out->write(_flagsTable, 352);
 
 		out->writeByte(script.sentenceDone);
@@ -599,10 +653,12 @@ void ScriptEngine::saveState(Common::SeekableWriteStream *out, Script &script, b
 	out->writeByte(script.curFileNo);
 	out->writeSint16BE(script.curGfxScript);
 
-	if (!onlyTempData) {
+	if (!(flags & kSaveFlagsTempData)) {
 		uint16 pos = script.curPos;
-		getArrayEntry(5, 0, pos);
+		if (flags & kSaveFlagsScriptedSave)
+			getArrayEntry(5, 0, pos);
 		out->writeUint16BE(pos);
+		out->writeUint16BE(script.newPos);
 	}
 }
 

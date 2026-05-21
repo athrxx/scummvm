@@ -26,6 +26,7 @@
 #include "common/ptr.h"
 #include "common/memstream.h"
 #include "common/system.h"
+#include "snatcher/saveflags.h"
 #include "snatcher/state.h"
 
 namespace Common {
@@ -50,7 +51,7 @@ public:
 	void updateSaveSlotsStatus(GameState &state);
 
 	void requestLoad(int slot);
-	void requestSave(int slot, const Common::String &desc);
+	void requestSave(int slot, const Common::String &desc, bool scriptedSave);
 
 	void handleSaveLoad(GameState &state);
 
@@ -82,7 +83,7 @@ public:
 
 private:
 	void loadState(int slot, GameState &state);
-	void saveState(int slot, GameState &state);
+	void saveState(int slot, GameState &state, SaveFlags flags);
 
 	Common::SeekableReadStream *openFileForLoading(int slot, GameState &state, SaveHeader &header);
 	Common::OutSaveFile *openFileForSaving(int slot, const Common::String &desc, GameState &state);
@@ -90,6 +91,7 @@ private:
 	SnatcherEngine *_vm;
 	Common::String _desc;
 	int _pendingSaveLoad;
+	SaveFlags _pendingSaveFlags;
 	bool _tryLoadFromLauncher;
 	bool _enableSaving;
 

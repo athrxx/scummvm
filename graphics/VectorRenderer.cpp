@@ -108,6 +108,9 @@ int VectorRenderer::stepGetRadius(const DrawStep &step, const Common::Rect &area
 	if (radius < 0)
 		radius = 0;
 
+	if (radius == 1)
+		radius = 0;
+
 	return radius;
 }
 

@@ -25,6 +25,7 @@
 #include "snatcher/mem_mapping.h"
 #include "snatcher/resource.h"
 #include "snatcher/saveload.h"
+#include "snatcher/saveflags.h"
 #include "snatcher/script.h"
 #include "snatcher/snatcher.h"
 #include "snatcher/sound.h"
@@ -493,8 +494,10 @@ void SnatcherEngine::updateMainState(GameState &state) {
 			_cmdQueue->writeUInt16(state.script.curGfxScript & 0xFF);
 			_cmdQueue->writeUInt16(0x07);
 			_cmdQueue->writeUInt16(_snd->fmGetStatus().music);
+			_cmdQueue->appendRestoreData();
 			_snd->pcmBlock(_snd->pcmGetStatus().blocked);
 			_snd->reduceVolume2(_snd->fmGetStatus().reduceVol2);
+			_snd->cdaRestore();
 		}
 
 		_ui->setControllerConfig(state.conf.controllerSetup);
@@ -803,7 +806,7 @@ Common::Error SnatcherEngine::loadGameState(int slot) {
 }
 
 Common::Error SnatcherEngine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
-	_saveMan->requestSave(slot, desc);
+	_saveMan->requestSave(slot, desc, kSaveFlagsNone);
 	return Common::kNoError;
 }
 

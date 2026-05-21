@@ -4207,6 +4207,9 @@ drawBorderRoundedSquareAlg(int x1, int y1, int r, int w, int h, PixelType color,
 		this->blendFill(ptr_fill2 + r, ptr_fill2 + w + 1 - r, color, alpha_b); // bottom
 
 		x = r - (sw - 1);
+		if (x == -1)
+			x = 0;
+
 		y = 0;
 		T = 0;
 		px = pitch * x;
