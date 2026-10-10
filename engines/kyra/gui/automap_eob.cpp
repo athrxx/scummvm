@@ -964,10 +964,66 @@ void Automap_EoB::createIcons(bool lowResTarget) {
 			break;
 		case kIconSpecial:
 			prepSurface(size2full, size2full, -1);
-			for (int i = 0; i < 360; i += 45) {
+			/* for (int i = 0; i < 360; i += 45) {
 				for (int ii = -10; ii < 10; ++ii) {
 					float a = (float)((360 + i + ii) % 360) * M_PI / 180.0f;
 					surf.drawLine(size2half + size2half * cosf(a), size2half + size2half * sinf(a), size2half + (size2half / 3) * cosf(a), size2half + (size2half / 3) * sinf(a), colTable[kColorSpecial1]);
+				}
+			}*/
+			{
+				Common::Point edges[12];
+				for (int i = 0; i < 360; i += 60) {
+					float a = (float)((360 + i - 12) % 360) * M_PI / 180.0f;
+					edges[i / 30] = Common::Point(size2half + size2half * cosf(a), size2half + size2half * sinf(a));
+					a = (float)((360 + i + 12) % 360) * M_PI / 180.0f;
+					edges[(i / 30) + 1] = Common::Point(size2half + size2half * cosf(a), size2half + size2half * sinf(a));
+					surf.drawLine(edges[i / 30].x, edges[i / 30].y, edges[(i / 30) + 1].x, edges[(i / 30) + 1].y, colTable[kColorSpecial1]);
+				}
+
+				Common::Point c[6];
+				for (int i = 0; i < 6; ++i) {
+					int diffX = edges[((i * 2) + 1) % 12].x - edges[((i * 2) + 0) % 12].x;
+					int diffY = edges[((i * 2) + 1) % 12].y - edges[((i * 2) + 0) % 12].y;
+					float y1a = diffX ? ((float)diffY / (float)diffX) : 0.0f;
+					float x1a = diffY ? ((float)diffX / (float)diffY) : 0.0f;
+					diffX = edges[((i * 2) + 2) % 12].x - edges[((i * 2) + 3) % 12].x;
+					diffY = edges[((i * 2) + 2) % 12].y - edges[((i * 2) + 3) % 12].y;
+					float y2a = diffX ? ((float)diffY / (float)diffX) : 0.0f;
+					float x2a = diffY ? ((float)diffX / (float)diffY) : 0.0f;
+
+					if (y2a && y1a) {
+						c[i].x = (float)(edges[(i * 2 + 1) % 12].y - edges[(i * 2 + 2) % 12].y) / (y2a - y1a);
+						if (y1a)
+							c[i].y = edges[(i * 2 + 1) % 12].y + c[i].x * y1a;
+						else if (y2a)
+							c[i].y = edges[(i * 2 + 2) % 12].y + c[i].x * y2a;
+						else
+							assert(0);
+					} else if (x2a && x1a) {
+						c[i].y = (float)(edges[(i * 2 + 1) % 12].x - edges[(i * 2 + 2) % 12].x) / (x2a - x1a);
+						if (x1a)
+							c[i].x = edges[(i * 2 + 1) % 12].x + c[i].y * x1a;
+						else if (x2a)
+							c[i].x = edges[(i * 2 + 2) % 12].x + c[i].y * x2a;
+						else
+							assert(0);
+					} else {
+						assert(0);
+					}
+					if (c[i].x >= 0 && c[i].x < surf.w && c[i].y >= 0 && c[i].y < surf.h)
+						surf.setPixel(c[i].x, c[i].y, colTable[kColorSpecial1]);
+
+					/* diffX = ABS<int>(c[i].x - edges[((i * 2) + 1) % 12].x);
+					diffY = ABS<int>(c[i].y - edges[((i * 2) + 1) % 12].y);
+					float a = (float)atan2f((float)diffY, (float)diffX);
+					int r = (float)diffX / cosf(a);
+
+					for (int ii = 0; ii < 360; ++ii) {
+						int x = c[i].x + r * cosf(ii * M_PI / 180.0f);
+						int y = c[i].y + r * sinf(ii * M_PI / 180.0f);
+						if (x >= 0 && x < surf.w && y >= 0 && y < surf.h)
+							surf.setPixel(x, y, colTable[kColorSpecial1]);
+					}*/
 				}
 			}
 			break;
