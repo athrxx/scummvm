@@ -666,13 +666,6 @@ void MacMenu::setName(MacMenuItem *menuItem, const Common::String &name) {
 	}
 }
 
-void MacMenu::setUnicodeName(MacMenuItem *menuItem, const Common::String &name, Common::CodePage cp) {
-	if (menuItem) {
-		menuItem->unicodeText = name.decode(cp);
-		_contentIsDirty = true;
-	}
-}
-
 void MacMenu::setAction(MacMenuItem *menuItem, int actionId) {
 	if (menuItem) {
 		menuItem->action = actionId;
@@ -689,10 +682,6 @@ bool MacMenu::getEnabled(MacMenuItem *menuItem) {
 
 Common::String MacMenu::getName(MacMenuItem *menuItem) {
 	return menuItem ? menuItem->text : Common::String();
-}
-
-Common::String MacMenu::getUnicodeName(MacMenuItem *menuItem, Common::CodePage cp) {
-	return menuItem ? menuItem->unicodeText.encode(cp) : Common::String();
 }
 
 int MacMenu::getAction(MacMenuItem *menuItem) {
@@ -714,11 +703,10 @@ void MacMenu::clearSubMenu(int id) {
 	menu->submenu->highlight = -1;
 }
 
-void MacMenu::createSubMenuFromString(int id, const char *str, int commandId, Common::CodePage encoding) {
+void MacMenu::createSubMenuFromString(int id, const char *str, int commandId) {
 	clearSubMenu(id);
 
-	Common::CodePage cp = (encoding == Common::kCodePageInvalid) ? Common::kMacRoman : encoding;
-	Common::U32String string(str, cp);
+	Common::String string(str);
 	MacMenuSubMenu *submenu = getSubmenu(nullptr, id);
 
 	if (submenu == nullptr)
@@ -726,47 +714,51 @@ void MacMenu::createSubMenuFromString(int id, const char *str, int commandId, Co
 	appendMenu(submenu, string, commandId);
 }
 
-void MacMenu::appendMenu(MacMenuSubMenu *submenu, const Common::U32String &string, int commandId, Common::CodePage encoding) {
-	Common::U32String item;
-	Common::CodePage cp = (encoding == Common::kCodePageInvalid) ? Common::kMacRoman : encoding;
+void MacMenu::appendMenu(MacMenuSubMenu *submenu, const Common::String &string, int commandId) {
+	Common::String item;
 
 	for (uint i = 0; i < string.size(); i++) {
-		while (i < string.size() && (string[i] != (Common::u32char_type_t)';' && string[i] != (Common::u32char_type_t)'\r')) // Read token, consume \r for popup menu (MacPopUp)
+		while (i < string.size() && (string[i] != ';' && string[i] != '\r')) // Read token, consume \r for popup menu (MacPopUp)
 			item += string[i++];
 
-		if (item.lastChar() == (Common::u32char_type_t)']') { // we have command id
+		if (item.lastChar() == ']') { // we have command id
 			item.deleteLastChar();
 
-			uint32 p = item.findLastOf('[');
-			if (p == Common::U32String::npos)
-				error("MacMenu::createSubMenuFromString(): Malformed menu item: '%s', bad format for actionId", item.encode(cp).c_str());
+			const char *p = strrchr(item.c_str(), '[');
 
-			commandId = atoi(item.substr(p + 1).encode(cp).c_str());
-			item.erase(p, Common::U32String::npos);
+			p++;
+
+			if (p == NULL) {
+				error("MacMenu::createSubMenuFromString(): Malformed menu item: '%s', bad format for actionId", item.c_str());
+			}
+
+			commandId = atoi(p);
+
+			item = Common::String(item.c_str(), p - 1);
 		}
 
-		if (item == Common::U32String("(-", cp)) {
+		if ((item == "(-") || (item.hasPrefix("-"))) {
 			addMenuItem(submenu, NULL, 0);
 		} else {
 			bool enabled = true;
 			bool checked = false;
 			int style = 0;
 			char shortcut = 0;
-			uint32 p = item.findLastOf('/');
-			if (p != Common::U32String::npos) {
-				if (item.size() - p >= 2) {
-					item.deleteChar(p);
-					shortcut = *item.substr(p).encode(cp).c_str();
-					item.deleteChar(p);
+			const char *shortPtr = strrchr(item.c_str(), '/');
+			if (shortPtr != NULL) {
+				if (strlen(shortPtr) >= 2) {
+					shortcut = shortPtr[1];
+					item.deleteChar(shortPtr - item.c_str());
+					item.deleteChar(shortPtr - item.c_str());
 				} else {
 					// if we only have one / without shortcut key, we skip it.
-					item.deleteChar(p);
-					// error("MacMenu::createSubMenuFromString(): Unexpected shortcut: '%s', item '%s' in menu '%s'", shortPtr, item.encode(cp).c_str(), string.encode(cp).c_str());
+					item.deleteChar(shortPtr - item.c_str());
+					// error("MacMenu::createSubMenuFromString(): Unexpected shortcut: '%s', item '%s' in menu '%s'", shortPtr, item.c_str(), string.c_str());
 				}
 			}
 
-			while (item.size() >= 2 && item[item.size() - 2] == (Common::u32char_type_t)'<') {
-				char c = (char)item.lastChar();
+			while (item.size() >= 2 && item[item.size() - 2] == '<') {
+				char c = item.lastChar();
 				if (c == 'B') {
 					style |= kMacFontBold;
 				} else if (c == 'I') {
@@ -786,7 +778,7 @@ void MacMenu::appendMenu(MacMenuSubMenu *submenu, const Common::U32String &strin
 				item.deleteLastChar();
 			}
 
-			Common::String tmpitem(item.encode(cp));
+			Common::String tmpitem(item);
 			tmpitem.trim();
 			// is that any places locate a parenthese will disable the item, or only the first char and last char counts.
 			if (tmpitem.size() > 0 && (tmpitem[0] == '(' || tmpitem.lastChar() == '(')) {
@@ -803,10 +795,7 @@ void MacMenu::appendMenu(MacMenuSubMenu *submenu, const Common::U32String &strin
 				item = item.substr(2, Common::String::npos);
 			}
 
-			if (cp == Common::kMacRoman)
-				addMenuItem(submenu, item.encode(cp), commandId, style, shortcut, enabled, checked);
-			else
-				addMenuItem(submenu, item, commandId, style, shortcut, enabled, checked);
+			addMenuItem(submenu, item, commandId, style, shortcut, enabled, checked);
 		}
 
 		item.clear();
@@ -970,8 +959,6 @@ int MacMenu::calcSubMenuWidth(MacMenuSubMenu *submenu) {
 
 			if (item->submenu != nullptr) // If we're drawing triangle
 				text += Common::U32String("  ");
-
-			text += Common::U32String(getAcceleratorString(item, "  "));
 
 			int width = _font->getStringWidth(text);
 			if (width > maxWidth) {
@@ -1286,7 +1273,7 @@ void MacMenu::renderSubmenu(MacMenuSubMenu *menu, bool recursive) {
 				const Font *font = getMenuFont(menu->items[i]->style);
 				int checkSymbol = menu->items[i]->checkSymbol;
 				if (!checkSymbol)
-					checkSymbol = menu->items[i]->unicode ? 0x221A : (_wm->_fontMan->hasBuiltInFonts() ? 0xD7 : 18);
+					checkSymbol = _wm->_fontMan->hasBuiltInFonts() ? 0xD7 : 18;
 
 				int padding = _align == kTextAlignRight ? -_menuRightDropdownPadding: _menuLeftDropdownPadding;
 				int offset = _align == kTextAlignRight ? padding - font->getCharWidth(checkSymbol) : 3;

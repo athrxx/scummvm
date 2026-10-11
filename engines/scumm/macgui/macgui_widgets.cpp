@@ -38,11 +38,9 @@ namespace Scumm {
 // Base widget
 // ---------------------------------------------------------------------------
 
-MacGuiImpl::MacWidget::MacWidget(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String text, bool enabled, Common::CodePage encoding) : MacGuiObject(bounds, enabled), _window(window) {
+MacGuiImpl::MacWidget::MacWidget(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String text, bool enabled) : MacGuiObject(bounds, enabled), _window(window), _text(text) {
 	_black = _window->_gui->getBlack();
 	_white = _window->_gui->getWhite();
-
-	_text = text.decode(encoding == Common::kCodePageInvalid ? Common::kMacRoman : encoding);
 
 	// Widgets are clipped to the inner surface of the dialog. If a widget
 	// is clipped out of existence, make it invisible to avoid crashes.
@@ -56,7 +54,7 @@ MacGuiImpl::MacWidget::MacWidget(MacGuiImpl::MacDialogWindow *window, Common::Re
 }
 
 Common::String MacGuiImpl::MacWidget::getText() const {
-	Common::String temp = _text.encode(Common::kUtf8);
+	Common::String temp = Common::U32String(_text, Common::kMacRoman).encode(Common::kUtf8);
 	return temp;
 }
 
@@ -85,7 +83,7 @@ void MacGuiImpl::MacWidget::drawBitmap(Common::Rect r, const uint16 *bitmap, uin
 	_window->_gui->drawBitmap(_window->innerSurface(), r, bitmap, color);
 }
 
-int MacGuiImpl::MacWidget::drawText(Common::U32String text, int x, int y, int w, uint32 fg, uint32 bg, Graphics::TextAlign align, bool wordWrap, int deltax) const {
+int MacGuiImpl::MacWidget::drawText(Common::String text, int x, int y, int w, uint32 fg, uint32 bg, Graphics::TextAlign align, bool wordWrap, int deltax) const {
 	if (text.empty())
 		return 0;
 
@@ -99,10 +97,10 @@ int MacGuiImpl::MacWidget::drawText(Common::U32String text, int x, int y, int w,
 	// Apply text substitutions
 
 	for (uint i = 0; i < text.size() - 1; i++) {
-		if (text[i] == (Common::String::unsigned_type)'^') {
+		if (text[i] == '^') {
 			uint nr = text[i + 1] - '0';
 			if (_window->hasSubstitution(nr)) {
-				Common::U32String &subst = _window->getSubstitution(nr);
+				Common::String &subst = _window->getSubstitution(nr);
 				text.replace(i, 2, subst);
 			}
 		}
@@ -110,7 +108,7 @@ int MacGuiImpl::MacWidget::drawText(Common::U32String text, int x, int y, int w,
 
 	// Word-wrap text
 
-	Common::U32StringArray lines;
+	Common::StringArray lines;
 	int maxLineWidth = 0;
 
 	if (wordWrap) {
@@ -126,10 +124,7 @@ int MacGuiImpl::MacWidget::drawText(Common::U32String text, int x, int y, int w,
 	int y0 = y;
 
 	for (uint i = 0; i < lines.size(); i++) {
-		if (_window->_gui->getCodePage() == Common::kMacRoman)
-			font->drawString(_window->innerSurface(), lines[i].encode(Common::kMacRoman), x, y0, w, fg, align, deltax);
-		else
-			font->drawString(_window->innerSurface(), lines[i], x, y0, w, fg, align, deltax);
+		font->drawString(_window->innerSurface(), lines[i], x, y0, w, fg, align, deltax);
 
 		if (!_enabled) {
 			Common::Rect textBox = font->getBoundingBox(lines[i], x, y0, w, align);
@@ -297,7 +292,7 @@ void MacGuiImpl::MacButton::drawCorners(Common::Rect r, CornerLine *corner, bool
 // Checkbox widget
 // ---------------------------------------------------------------------------
 
-MacGuiImpl::MacCheckbox::MacCheckbox(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String &text, bool enabled, Common::CodePage encoding) : MacWidget(window, bounds, text, enabled, encoding) {
+MacGuiImpl::MacCheckbox::MacCheckbox(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String text, bool enabled) : MacWidget(window, bounds, text, enabled) {
 	// The DITL may define a larger than necessary area for the checkbox,
 	// so we need to calculate the hit bounds.
 
@@ -391,7 +386,7 @@ void MacGuiImpl::MacStaticText::draw(bool drawFocused) {
 // actual selection by mouse enormously.
 // ---------------------------------------------------------------------------
 
-MacGuiImpl::MacEditText::MacEditText(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String &text, bool enabled, Common::CodePage encoding) : MacWidget(window, bounds, text, enabled, encoding) {
+MacGuiImpl::MacEditText::MacEditText(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String text, bool enabled) : MacWidget(window, bounds, text, enabled) {
 	_font = _window->_gui->getFont(kSystemFont);
 
 	// This widget gets its own text surface, to ensure that the text is
@@ -762,8 +757,7 @@ bool MacGuiImpl::MacEditText::handleKeyDown(Common::Event &event) {
 		break;
 	}
 
-	char in[2] = { (char)(event.kbd.ascii & 0xFF), '\0' };
-	int c = Common::U32String(in, Common::kISO8859_1).encode(Common::kMacRoman).c_str()[0];
+	int c = _window->_gui->toMacRoman(event.kbd.ascii);
 
 	if (c > 0) {
 		if (_selectLen != 0)
@@ -813,7 +807,7 @@ void MacGuiImpl::MacEditText::handleMouseMove(Common::Event &event) {
 // Image widget
 // ---------------------------------------------------------------------------
 
-MacGuiImpl::MacImage::MacImage(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Graphics::Surface *surface, Graphics::Surface *mask, bool enabled) : MacWidget(window, bounds, "Picture", enabled, Common::kCodePageInvalid) {
+MacGuiImpl::MacImage::MacImage(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Graphics::Surface *surface, Graphics::Surface *mask, bool enabled) : MacWidget(window, bounds, "Picture", enabled) {
 	_image = surface;
 	_mask = mask;
 }
@@ -1442,7 +1436,7 @@ void MacGuiImpl::MacImageSlider::handleWheelDown() {
 // List box widget
 // ---------------------------------------------------------------------------
 
-MacGuiImpl::MacListBox::MacListBox(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::StringArray texts, bool enabled, bool contentUntouchable, Common::CodePage encoding) : MacWidget(window, bounds, "ListBox", enabled, encoding), _texts(texts) {
+MacGuiImpl::MacListBox::MacListBox(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::StringArray texts, bool enabled, bool contentUntouchable) : MacWidget(window, bounds, "ListBox", enabled), _texts(texts) {
 	int pageSize = _bounds.height() / 16;
 
 	int numSlots = MIN<int>(pageSize, texts.size());
@@ -1661,7 +1655,7 @@ bool MacGuiImpl::MacListBox::handleKeyDown(Common::Event &event) {
 // Pop-up menu widget
 // ---------------------------------------------------------------------------
 
-MacGuiImpl::MacPopUpMenu::MacPopUpMenu(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String &text, int textWidth, Common::StringArray &texts, bool enabled, Common::CodePage encoding) : MacWidget(window, bounds, text, enabled, encoding), _textWidth(textWidth) {
+MacGuiImpl::MacPopUpMenu::MacPopUpMenu(MacGuiImpl::MacDialogWindow *window, Common::Rect bounds, Common::String text, int textWidth, Common::StringArray texts, bool enabled) : MacWidget(window, bounds, text, enabled), _textWidth(textWidth), _texts(texts) {
 	_enhUIUX = g_engine->enhancementEnabled(kEnhUIUX);
 	_floating = false;
 	_black = _window->_gui->getBlack();
@@ -1669,9 +1663,6 @@ MacGuiImpl::MacPopUpMenu::MacPopUpMenu(MacGuiImpl::MacDialogWindow *window, Comm
 
 	_popUpBounds.left = _bounds.left + _textWidth;
 	_popUpBounds.right = _bounds.right;
-
-	for (Common::StringArray::const_iterator i = texts.begin(); i != texts.end(); ++i)
-		_texts.push_back(i->decode(encoding));
 }
 
 MacGuiImpl::MacPopUpMenu::~MacPopUpMenu() {
@@ -1724,11 +1715,7 @@ void MacGuiImpl::MacPopUpMenu::draw(bool drawFocused) {
 	const Graphics::Font *font = _window->_gui->getFont(kSystemFont);
 
 	s->fillRect(Common::Rect(_bounds.left, _bounds.top + 1, _bounds.left + _textWidth, _bounds.bottom - 3), bg);
-
-	if (_window->_gui->getCodePage() == Common::kMacRoman)
-		font->drawString(s, _text.encode(Common::kMacRoman), _bounds.left, _bounds.top + 1, _textWidth, fg, Graphics::kTextAlignLeft, 4);
-	else
-		font->drawString(s, _text, _bounds.left, _bounds.top + 1, _textWidth, fg, Graphics::kTextAlignLeft, 4);
+	font->drawString(s, _text, _bounds.left, _bounds.top + 1, _textWidth, fg, Graphics::kTextAlignLeft, 4);
 
 	if (_menuVisible) {
 		Common::Rect r = _popUpBounds;
@@ -1753,13 +1740,10 @@ void MacGuiImpl::MacPopUpMenu::draw(bool drawFocused) {
 
 			s->fillRect(textRect, bg);
 
-			if (_window->_gui->getCodePage() == Common::kMacRoman)
-				font->drawString(s, _texts[i].encode(Common::kMacRoman), textRect.left, textRect.top, textRect.width(), fg, Graphics::kTextAlignLeft, 14);
-			else
-				font->drawString(s, _texts[i], textRect.left, textRect.top, textRect.width(), fg, Graphics::kTextAlignLeft, 14);
+			font->drawString(s, _texts[i], textRect.left, textRect.top, textRect.width(), fg, Graphics::kTextAlignLeft, 14);
 
 			if (i == _value)
-				font->drawChar(s, (_window->_gui->getCodePage() == Common::kMacJapanese) ? 0x221A : 0x12, textRect.left + 2, textRect.top, fg);
+				font->drawString(s, "\x12", textRect.left + 2, textRect.top, 10, fg);
 
 			textRect.translate(0, 16);
 		}
@@ -1771,10 +1755,7 @@ void MacGuiImpl::MacPopUpMenu::draw(bool drawFocused) {
 		s->hLine(r.left + 3, r.bottom, r.right, _black);
 		s->vLine(r.right, r.top + 3, r.bottom - 1, _black);
 
-		if (_window->_gui->getCodePage() == Common::kMacRoman)
-			font->drawString(s, _texts[_value].encode(Common::kMacRoman), r.left, r.top + 1, r.width() - 20, _black, Graphics::kTextAlignLeft, 15);
-		else
-			font->drawString(s, _texts[_value], r.left, r.top + 1, r.width() - 20, _black, Graphics::kTextAlignLeft, 15);
+		font->drawString(s, _texts[_value], r.left, r.top + 1, r.width() - 20, _black, Graphics::kTextAlignLeft, 15);
 
 		const uint16 arrowDownIcon[16] = {
 			0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x3FF8, 0x1FF0, 0x0FE0,

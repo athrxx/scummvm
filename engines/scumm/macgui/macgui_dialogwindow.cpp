@@ -244,25 +244,25 @@ void MacGuiImpl::MacDialogWindow::addWidget(MacWidget *widget, MacWidgetType typ
 	_widgets.push_back(widget);
 }
 
-MacGuiImpl::MacButton *MacGuiImpl::MacDialogWindow::addButton(Common::Rect bounds, Common::String text, bool enabled, Common::CodePage encoding) {
-	MacGuiImpl::MacButton *button = new MacButton(this, bounds, text, enabled, encoding);
+MacGuiImpl::MacButton *MacGuiImpl::MacDialogWindow::addButton(Common::Rect bounds, Common::String text, bool enabled) {
+	MacGuiImpl::MacButton *button = new MacButton(this, bounds, text, enabled);
 	addWidget(button, kWidgetButton);
 	return button;
 }
 
-MacGuiImpl::MacCheckbox *MacGuiImpl::MacDialogWindow::addCheckbox(Common::Rect bounds, Common::String &text, bool enabled, Common::CodePage encoding) {
-	MacGuiImpl::MacCheckbox *checkbox = new MacCheckbox(this, bounds, text, enabled, encoding);
+MacGuiImpl::MacCheckbox *MacGuiImpl::MacDialogWindow::addCheckbox(Common::Rect bounds, Common::String text, bool enabled) {
+	MacGuiImpl::MacCheckbox *checkbox = new MacCheckbox(this, bounds, text, enabled);
 	addWidget(checkbox, kWidgetCheckbox);
 	return checkbox;
 }
 
-MacGuiImpl::MacStaticText *MacGuiImpl::MacDialogWindow::addStaticText(Common::Rect bounds, Common::String &text, bool enabled, Graphics::TextAlign alignment, Common::CodePage encoding) {
-	MacGuiImpl::MacStaticText *staticText = new MacStaticText(this, bounds, text, enabled, alignment, encoding);
+MacGuiImpl::MacStaticText *MacGuiImpl::MacDialogWindow::addStaticText(Common::Rect bounds, Common::String text, bool enabled, Graphics::TextAlign alignment) {
+	MacGuiImpl::MacStaticText *staticText = new MacStaticText(this, bounds, text, enabled, alignment);
 	addWidget(staticText, kWidgetStaticText);
 	return staticText;
 }
 
-MacGuiImpl::MacEditText *MacGuiImpl::MacDialogWindow::addEditText(Common::Rect bounds, Common::String &text, bool enabled) {
+MacGuiImpl::MacEditText *MacGuiImpl::MacDialogWindow::addEditText(Common::Rect bounds, Common::String text, bool enabled) {
 	MacGuiImpl::MacEditText *editText = new MacEditText(this, bounds, text, enabled);
 	addWidget(editText, kWidgetEditText);
 	return editText;
@@ -313,19 +313,19 @@ MacGuiImpl::MacImageSlider *MacGuiImpl::MacDialogWindow::addImageSlider(Common::
 	return slider;
 }
 
-MacGuiImpl::MacListBox *MacGuiImpl::MacDialogWindow::addListBox(Common::Rect bounds, Common::StringArray &texts, bool enabled, bool contentUntouchable) {
+MacGuiImpl::MacListBox *MacGuiImpl::MacDialogWindow::addListBox(Common::Rect bounds, Common::StringArray texts, bool enabled, bool contentUntouchable) {
 	MacGuiImpl::MacListBox *listBox = new MacListBox(this, bounds, texts, enabled, contentUntouchable);
 	addWidget(listBox, kWidgetListBox);
 	return listBox;
 }
 
-MacGuiImpl::MacPopUpMenu *MacGuiImpl::MacDialogWindow::addPopUpMenu(Common::Rect bounds, Common::String &text, int textWidth, Common::StringArray texts, bool enabled, Common::CodePage encoding) {
-	MacGuiImpl::MacPopUpMenu *popUpMenu = new MacPopUpMenu(this, bounds, text, textWidth, texts, enabled, encoding);
+MacGuiImpl::MacPopUpMenu *MacGuiImpl::MacDialogWindow::addPopUpMenu(Common::Rect bounds, Common::String text, int textWidth, Common::StringArray texts, bool enabled) {
+	MacGuiImpl::MacPopUpMenu *popUpMenu = new MacPopUpMenu(this, bounds, text, textWidth, texts, enabled);
 	addWidget(popUpMenu, kWidgetPopUpMenu);
 	return popUpMenu;
 }
 
-void MacGuiImpl::MacDialogWindow::addControl(Common::Rect bounds, uint16 controlId, Common::CodePage encoding) {
+void MacGuiImpl::MacDialogWindow::addControl(Common::Rect bounds, uint16 controlId) {
 	Common::MacResManager resource;
 
 	resource.open(_gui->_resourceFile);
@@ -351,7 +351,9 @@ void MacGuiImpl::MacDialogWindow::addControl(Common::Rect bounds, uint16 control
 				Common::StringArray items;
 
 				while (true) {
-					Common::String str = menu->readPascalString();
+					Common::String str;
+
+					str = menu->readPascalString();
 
 					if (str.empty())
 						break;
@@ -362,7 +364,7 @@ void MacGuiImpl::MacDialogWindow::addControl(Common::Rect bounds, uint16 control
 
 				delete menu;
 
-				addPopUpMenu(bounds, cntlText, textWidth, items, true, encoding);
+				addPopUpMenu(bounds, cntlText, textWidth, items, true);
 			} else
 				warning("MacGuiImpl::addPopUpMenu: Could not load MENU %d", menuId);
 		} else

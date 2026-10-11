@@ -98,19 +98,13 @@ enum {
 
 class Font;
 
-struct MacFontAlias {
-	int id;
-	uint32 rangeFirst;
-	uint32 rangeLast;
-};
-
 struct FontInfo {
 	Common::Language lang;
 	Common::CodePage encoding;
-	const MacFontAlias *aliasForId;
+	int aliasForId;
 	Common::String name;
 
-	FontInfo() : lang(Common::UNK_LANG), encoding(Common::kCodePageInvalid), aliasForId(nullptr) {}
+	FontInfo() : lang(Common::UNK_LANG), encoding(Common::kCodePageInvalid), aliasForId(-1) {}
 };
 
 class MacFont {
@@ -188,7 +182,7 @@ public:
 
 	Common::Language getFontLanguage(uint16 id);
 	Common::CodePage getFontEncoding(uint16 id);
-	const MacFontAlias *getFontAliasForId(uint16 id) const;
+	int getFontAliasForId(uint16 id);
 	Common::String getFontName(uint16 id);
 
 	void loadFonts(Common::SeekableReadStream *stream);

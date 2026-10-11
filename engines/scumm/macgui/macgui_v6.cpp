@@ -1005,7 +1005,7 @@ bool MacV6Gui::runOptionsDialog() {
 		window->addSubstitution("");
 		window->addSubstitution("");
 		window->addSubstitution("");
-		window->addSubstitution(_gameName, getCodePage());
+		window->addSubstitution(_gameName);
 
 		popUpInteraction = (MacPopUpMenu *)window->getWidget(kWidgetPopUpMenu, 0);
 		popUpVideoQuality = (MacPopUpMenu *)window->getWidget(kWidgetPopUpMenu, 1);
@@ -1267,7 +1267,7 @@ bool MacV6Gui::runRestartDialog() {
 	window->addSubstitution("");
 	window->addSubstitution("");
 	window->addSubstitution("");
-	window->addSubstitution(_gameName, getCodePage());
+	window->addSubstitution(_gameName);
 
 	while (!_vm->shouldQuit()) {
 		MacDialogEvent event;
