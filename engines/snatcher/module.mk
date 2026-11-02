@@ -3,6 +3,7 @@ MODULE := engines/snatcher
 MODULE_OBJS := \
 	action.o \
 	animator_scd.o \
+	fantranslations.o \
 	graphics.o \
 	memory.o \
 	mem_mapping.o \
